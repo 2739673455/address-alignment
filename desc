@@ -1,0 +1,17 @@
+./
+├── data/
+│   ├── raw/
+│   │   └── data.txt        # 微调数据
+│   └── region.sql          # 地址数据表
+├── pretrained/             # 预训练模型
+│   └── bert-base-chinese/
+├── finetuned/              # 模型权重保存
+├── templates/              # 网页模板
+├── config.py               # 配置文件
+├── models_def.py           # 模型定义
+├── preprocess.py           # 数据预处理
+├── train.py                # 训练
+├── main.py                 # 主程序
+├── data_prepare.py         # 数据准备
+├── address_alignment.py    # 地址对齐
+└── app.py                  # web服务

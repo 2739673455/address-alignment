@@ -1,0 +1,6 @@
+__pycache__/
+logs/
+models/
+pretrained/
+finetuned/
+processed/
