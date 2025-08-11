@@ -1,9 +1,8 @@
 import os
 import random
-from datasets import Dataset
 from torch.utils.data import Subset
-from datasets import load_from_disk
 from torch.utils.data import DataLoader
+from datasets import Dataset, load_from_disk
 
 
 class Processor:
@@ -12,7 +11,6 @@ class Processor:
         data_path,
         save_dir,
         tokenizer,
-        batch_size,
         max_seq_len,
         train_ratio=0.8,
         test_ratio=0.1,
@@ -20,7 +18,6 @@ class Processor:
         self.data_path = data_path
         self.save_dir = save_dir
         self.tokenizer = tokenizer
-        self.batch_size = batch_size
         self.max_seq_len = max_seq_len
         self.train_ratio = train_ratio
         self.test_ratio = test_ratio
@@ -29,33 +26,36 @@ class Processor:
         """处理数据集并保存"""
         dataset = self._make_dataset()
         dataset = self._split_dataset(dataset)
+        # 保存数据集
         for type in ["train", "valid", "test"]:
             dataset[type].save_to_disk(self.save_dir / type)
 
-    def get_dataloader(self, type, max_examples=None):
+    def get_dataloader(self, type, batch_size, max_examples=None):
         """获取保存的数据集，并加载 Dataloader"""
         if not os.path.exists(self.save_dir / type):
             self.process()
+        # 加载数据集
         dataset = load_from_disk(self.save_dir / type)
+        # 如果限制了最大样本数，获取不多于 max_examples 的样本
         if max_examples:
             indices = list(range(len(dataset)))
             random.shuffle(indices)
             max_examples = min(max_examples, len(dataset))
             indices = indices[:max_examples]
             dataset = Subset(dataset, indices)
-        return DataLoader(dataset, self.batch_size, shuffle=(type == "train"))
+        return DataLoader(dataset, batch_size, shuffle=(type == "train"))
 
     def _make_dataset(self):
         """处理数据集"""
         raise NotImplementedError
 
-    def _split_dataset(self, dataset: Dataset):
+    def _split_dataset(self, dataset):
         """划分数据集"""
         train_size = int(dataset.num_rows * self.train_ratio)
         dataset = dataset.train_test_split(test_size=self.test_ratio)
-        dataset["train"], dataset["valid"] = (
-            dataset["train"].train_test_split(train_size=train_size).values()
-        )
+        train_valid_split = dataset["train"].train_test_split(train_size=train_size)
+        dataset["train"] = train_valid_split["train"]
+        dataset["valid"] = train_valid_split["test"]
         return dataset
 
 
@@ -65,7 +65,6 @@ class AddressTaggingProcessor(Processor):
         data_path,
         save_dir,
         tokenizer,
-        batch_size,
         label_list,
         max_seq_len=64,
         train_ratio=0.8,
@@ -75,7 +74,6 @@ class AddressTaggingProcessor(Processor):
             data_path,
             save_dir,
             tokenizer,
-            batch_size,
             max_seq_len,
             train_ratio,
             test_ratio,

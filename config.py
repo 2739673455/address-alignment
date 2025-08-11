@@ -16,12 +16,13 @@ BASE_DIR = Path(__file__).parent
 RAW_DATA_DIR = BASE_DIR / "data/raw"
 # 已处理数据存放路径
 PROCESSED_DATA_DIR = BASE_DIR / "data/processed"
-# 本地预训练模型路径
-PRETRAINED_DIR = BASE_DIR / "pretrained"
 # 模型参数保存路径
 FINETUNED_DIR = BASE_DIR / "finetuned"
 # TensorBoard 日志保存路径
 LOGS_DIR = BASE_DIR / "logs"
+# 本地预训练模型路径
+PRETRAINED_DIR = Path("~/models").expanduser()
+BERT_MODEL = PRETRAINED_DIR / "bert-base-chinese"
 
 # 设备
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

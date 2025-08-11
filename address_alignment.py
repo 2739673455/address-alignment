@@ -151,7 +151,7 @@ def query_parent(region_type_id, region_name, region_id=None):
 
 
 if __name__ == "__main__":
-    model = AddressTagging(config.PRETRAINED_DIR / "bert-base-chinese", config.LABELS)
+    model = AddressTagging(config.BERT_MODEL, config.LABELS)
     load_params(model, config.FINETUNED_DIR / "address_tagging.pt")
     text = [
         "中国浙江省杭州市余杭区葛墩路27号楼",

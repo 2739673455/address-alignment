@@ -5,36 +5,36 @@ from preprocess import AddressTaggingProcessor
 from models_def import AddressTagging, load_params
 from torch.utils.tensorboard.writer import SummaryWriter
 
-device = config.DEVICE
+batch_size = 16
 learning_rate = 1e-5
+device = config.DEVICE
 
 
-def model_go(train=None, test=None, inference=None, model_params_path=None):
-    model = AddressTagging(config.PRETRAINED_DIR / "bert-base-chinese", config.LABELS)
+def model_go(train=0, test=0, inference=0, model_params_path=None):
+    model = AddressTagging(config.BERT_MODEL, config.LABELS)
     processor = AddressTaggingProcessor(
         data_path=config.RAW_DATA_DIR / "data.txt",
         save_dir=config.PROCESSED_DATA_DIR,
         tokenizer=model.tokenizer,
-        batch_size=128,
         label_list=config.LABELS,
     )
     trainer = AddressTaggingTrainer(model, device, 10, learning_rate)
 
-    writer = None
     save_name = f"address_tagging-{datetime.now().strftime('%Y%m%d%H%M%S')}"
     load_params(model, model_params_path)
+    writer = None
 
     if train:
         writer = SummaryWriter(config.LOGS_DIR / save_name)
         dataloader = {
-            "train": processor.get_dataloader("train"),
-            "valid": processor.get_dataloader("valid"),
+            "train": processor.get_dataloader("train", batch_size),
+            "valid": processor.get_dataloader("valid", batch_size),
         }
         model_params_path = config.FINETUNED_DIR / f"{save_name}.pt"
         trainer(dataloader, model_params_path, writer)
 
     if test:
-        test_dataloader = processor.get_dataloader("test")
+        test_dataloader = processor.get_dataloader("test", batch_size)
         trainer({"test": test_dataloader}, writer=writer, is_test=True)
 
     if writer:

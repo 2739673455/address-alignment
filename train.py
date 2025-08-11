@@ -1,28 +1,36 @@
+import os
 import tqdm
 import torch
-import torch.optim as optim
 from sklearn.metrics import precision_recall_fscore_support
 
 
 class Trainer:
     """训练验证与测试"""
 
-    def __init__(self, model, device, epochs, learning_rate, checkpoint_steps=200):
+    def __init__(
+        self,
+        model,
+        device,
+        epochs,
+        learning_rate,
+        checkpoint_steps=None,
+        optimizer=torch.optim.AdamW,
+    ):
         """
         参数:
         - model: 模型
         - device: 设备
         - epochs: 训练轮数
         - learning_rate: 学习率
-        - checkpoint_steps: 多少步之后保存检查点
+        - checkpoint_steps: 保存检查点的步数
+        - optimizer: 优化器
         """
         self.model = model
         self.device = device
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.checkpoint_steps = checkpoint_steps
-
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.learning_rate)
+        self.optimizer = optimizer(self.model.parameters(), lr=self.learning_rate)
 
     def __call__(
         self,
@@ -69,6 +77,8 @@ class Trainer:
             # 保存最佳模型
             if valid_metrics["f1"] >= best_valid_metric:
                 best_valid_metric = valid_metrics["f1"]
+                # 确保目标目录存在
+                os.makedirs(os.path.dirname(self.model_params_path), exist_ok=True)
                 torch.save(self.model.state_dict(), self.model_params_path)
 
     def run_epoch(self, phase, epoch=0):
@@ -101,7 +111,7 @@ class Trainer:
 
                     self.global_step += 1
 
-                    # 保存模型参数
+                    # 保存检查点
                     if (
                         self.checkpoint_steps
                         and self.global_step % self.checkpoint_steps == 0

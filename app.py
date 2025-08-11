@@ -8,7 +8,7 @@ from address_alignment import address_alignment
 from models_def import AddressTagging, load_params
 
 # 加载模型
-model = AddressTagging(config.PRETRAINED_DIR / "bert-base-chinese", config.LABELS)
+model = AddressTagging(config.BERT_MODEL, config.LABELS)
 load_params(model, config.FINETUNED_DIR / "address_tagging.pt")
 
 # 创建 FastAPI 实例
