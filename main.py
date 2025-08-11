@@ -47,8 +47,7 @@ def model_go(train=0, test=0, inference=0, model_params_path=None):
         elif isinstance(res, list):
             for a_text, a_res in zip(text, res):
                 for t, r in zip(a_text, a_res):
-                    print(f"{t}-{r}", end="\t")
-                print("\n")
+                    print(f"{t}-{r}", end="\n")
 
 
 text = [
@@ -62,4 +61,4 @@ text = [
     "广州市花都区花东镇27号楼",
 ]
 
-model_go(1, 1, 1, config.BASE_DIR / "finetuned/address_tagging.pt")
+model_go(0, 0, 1, config.BASE_DIR / "finetuned/address_tagging.pt")
