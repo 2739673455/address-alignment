@@ -61,4 +61,4 @@ text = [
     "广州市花都区花东镇27号楼",
 ]
 
-model_go(0, 0, 1, config.BASE_DIR / "finetuned/address_tagging.pt")
+model_go(1, 1, 0, config.FINETUNED_DIR / "address_tagging.pt")

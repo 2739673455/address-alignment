@@ -3,10 +3,35 @@ import pymysql
 from models_def import AddressTagging, load_params
 
 
-def address_alignment(text, model):
+def address_alignment(text: str, model: AddressTagging) -> dict:
+    # 获取标注结果
     tagging = model.predict(text)
+    # 填充各级别地址
+    address = address_extract(text, tagging)
 
-    # 填充地址信息
+    print("标注后填充结果:", address)
+
+    # 校验地址信息
+    with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
+        with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            # 逐级别校验
+            for region_type_id in [2, 3, 4, 5]:
+                if not address[region_type_id]:
+                    continue
+                check_address(cursor, region_type_id, address)
+
+    print("校验后填充结果:", address)
+
+    return {
+        "省份": address[2],
+        "城市": address[3],
+        "区县": address[4],
+        "街道": address[5],
+        "详细地址": address[6],
+    }
+
+
+def address_extract(text: str, tagging: list[str]) -> dict:
     # 标签到地区类别 id 映射表
     label_map = {
         "": 0,
@@ -28,6 +53,7 @@ def address_alignment(text, model):
         "floorno": 6,
         "devzone": 6,
     }
+    # 各级别对应地址信息
     address = {
         2: None,
         3: None,
@@ -35,6 +61,7 @@ def address_alignment(text, model):
         5: None,
         6: None,
     }
+    # 提取出各级别地址信息
     start_pos = 0
     tag_len = len(tagging)
     for end_pos in range(tag_len):
@@ -46,25 +73,10 @@ def address_alignment(text, model):
                 # 添加片段
                 address[label_map[tagging[start_pos]]] = text[start_pos : end_pos + 1]
             start_pos = end_pos + 1
-    # print("标注后填充结果:", address)
-
-    # 校验地址信息
-    for region_type_id in [2, 3, 4, 5]:
-        if not address[region_type_id]:
-            continue
-        check_address(region_type_id, address)
-
-    # print("校验后填充结果:", address)
-    return {
-        "省份": address[2],
-        "城市": address[3],
-        "区县": address[4],
-        "街道": address[5],
-        "详细地址": address[6],
-    }
+    return address
 
 
-def check_address(region_type_id, address, parent_id=None):
+def check_address(cursor, region_type_id, address, parent_id=None):
     """
     向上校验地址信息
     如果没有查询到结果，当前地址信息改为None
@@ -75,7 +87,7 @@ def check_address(region_type_id, address, parent_id=None):
         如果校验到不为None且正确的，结束校验
         如果校验到不为None且不正确的，撤销当前到该上级的所有的填充
     """
-    res = query_parent(region_type_id, address[region_type_id], parent_id)
+    res = query_parent(cursor, region_type_id, address[region_type_id], parent_id)
     # print(address)
 
     # 无结果
@@ -116,38 +128,37 @@ def check_address(region_type_id, address, parent_id=None):
         return False
 
 
-def query_parent(region_type_id, region_name, region_id=None):
+def query_parent(cursor, region_type_id, region_name, region_id=None):
     """
     查询自己和父级地址信息
     如果是首次查询，只有地址名称可作为过滤信息
     如果是后续查询，可以使用先前查询的 parent_id 作为当前 id 来进行过滤，防止重名地址的问题
     """
-    with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
-        with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            sql = (
-                "select "
-                "region_parent.id as parent_id,"
-                "region_parent.name as parent_name,"
-                "region.name as name "
-                "from region "
-                "join region as region_parent on region_parent.id=region.parent_id "
-                "where region.region_type=%s and region.name like %s"
-            )
-            filter = (region_type_id, f"%{region_name}%")
-            if region_id:
-                sql += " and region.id=%s"
-                filter = (region_type_id, f"%{region_name}%", region_id)
-            cursor.execute(sql, filter)
-            results = cursor.fetchall()
-            res = None
-            if results:
-                for r in results:
-                    if region_name == r["name"]:
-                        res = r
-                        break
-                else:
-                    res = results[0]
-            return res
+
+    sql = (
+        "select "
+        "region_parent.id as parent_id,"
+        "region_parent.name as parent_name,"
+        "region.name as name "
+        "from region "
+        "join region as region_parent on region_parent.id=region.parent_id "
+        "where region.region_type=%s and region.name like %s "
+    )
+    filter = (region_type_id, f"%{region_name}%")
+    if region_id:
+        sql += "and region.id=%s "
+        filter = (region_type_id, f"%{region_name}%", region_id)
+    cursor.execute(sql, filter)
+    results = cursor.fetchall()
+    res = None
+    if results:
+        for r in results:
+            if region_name == r["name"]:
+                res = r
+                break
+        else:
+            res = results[0]
+    return res
 
 
 if __name__ == "__main__":
