@@ -1,5 +1,6 @@
 import config
 import pymysql
+from difflib import SequenceMatcher
 from models_def import AddressTagging, load_params
 
 
@@ -8,30 +9,19 @@ def address_alignment(text: str, model: AddressTagging) -> dict:
     tagging = model.predict(text)
     # 填充各级别地址
     address = address_extract(text, tagging)
-
-    print("标注后填充结果:", address)
-
     # 校验地址信息
-    with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
-        with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            # 逐级别校验
-            for region_type_id in [2, 3, 4, 5]:
-                if not address[region_type_id]:
-                    continue
-                check_address(cursor, region_type_id, address)
-
-    print("校验后填充结果:", address)
-
+    correct_address = check_address(address)
+    # print("原始结果:", address)
     return {
-        "省份": address[2],
-        "城市": address[3],
-        "区县": address[4],
-        "街道": address[5],
+        "省份": correct_address[2],
+        "城市": correct_address[3],
+        "区县": correct_address[4],
+        "街道": correct_address[5],
         "详细地址": address[6],
     }
 
 
-def address_extract(text: str, tagging: list[str]) -> dict:
+def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
     # 标签到地区类别 id 映射表
     label_map = {
         "": 0,
@@ -54,13 +44,7 @@ def address_extract(text: str, tagging: list[str]) -> dict:
         "devzone": 6,
     }
     # 各级别对应地址信息
-    address = {
-        2: None,
-        3: None,
-        4: None,
-        5: None,
-        6: None,
-    }
+    address = {2: None, 3: None, 4: None, 5: None, 6: None}
     # 提取出各级别地址信息
     start_pos = 0
     tag_len = len(tagging)
@@ -76,89 +60,84 @@ def address_extract(text: str, tagging: list[str]) -> dict:
     return address
 
 
-def check_address(cursor, region_type_id, address, parent_id=None):
-    """
-    向上校验地址信息
-    如果没有查询到结果，当前地址信息改为None
-    如果是顶层，填充本级
-    如果上级不为None，且校验正确，填充当前地址信息
-    如果上级不为None，且校验不正确，将当前地址信息改为None
-    如果上级为None，使用父级地址填充上级，并继续校验上级。直到顶层，或者
-        如果校验到不为None且正确的，结束校验
-        如果校验到不为None且不正确的，撤销当前到该上级的所有的填充
-    """
-    res = query_parent(cursor, region_type_id, address[region_type_id], parent_id)
-    # print(address)
+def check_address(address: dict[int, str]) -> dict[int, str]:
+    """校验地址"""
 
-    # 无结果
-    if not res:
-        address[region_type_id] = None
-        return True
-
-    # 顶层
-    if region_type_id == 2:
-        address[region_type_id] = res["name"]
-        return True
-
-    # 上级不为None，且校验正确
-    if (
-        address[region_type_id - 1]
-        and address[region_type_id - 1] == res["parent_name"]
-    ):
-        address[region_type_id] = res["name"]
-        return True
-
-    # 上级不为None，且校验不正确
-    if (
-        address[region_type_id - 1]
-        and address[region_type_id - 1] != res["parent_name"]
-    ):
-        address[region_type_id] = None
-        return False
-
-    # 上级为None，使用父级地址填充上级，并继续校验上级
-    if not address[region_type_id - 1]:
-        address[region_type_id] = res["name"]
-        address[region_type_id - 1] = res["parent_name"]
-        done = check_address(region_type_id - 1, address, res["parent_id"])
-        if done:
-            return True
-        address[region_type_id] = None
-        address[region_type_id - 1] = None
-        return False
-
-
-def query_parent(cursor, region_type_id, region_name, region_id=None):
-    """
-    查询自己和父级地址信息
-    如果是首次查询，只有地址名称可作为过滤信息
-    如果是后续查询，可以使用先前查询的 parent_id 作为当前 id 来进行过滤，防止重名地址的问题
-    """
-
-    sql = (
-        "select "
-        "region_parent.id as parent_id,"
-        "region_parent.name as parent_name,"
-        "region.name as name "
-        "from region "
-        "join region as region_parent on region_parent.id=region.parent_id "
-        "where region.region_type=%s and region.name like %s "
-    )
-    filter = (region_type_id, f"%{region_name}%")
-    if region_id:
-        sql += "and region.id=%s "
-        filter = (region_type_id, f"%{region_name}%", region_id)
-    cursor.execute(sql, filter)
-    results = cursor.fetchall()
-    res = None
-    if results:
-        for r in results:
-            if region_name == r["name"]:
-                res = r
-                break
+    def flatten_address_tree(tree, chain=[]):
+        """将树展平成地址链"""
+        chains = []
+        # 非叶节点
+        if isinstance(tree, dict) and tree:
+            for k, v in tree.items():
+                chains.extend(flatten_address_tree(v, chain + [k]))
+        # 叶节点
+        elif isinstance(tree, list) and tree:
+            for road in tree:
+                chains.append(chain + [road])
         else:
-            res = results[0]
-    return res
+            chains.append(chain)
+        return chains
+
+    address_tree = {}
+    region_types = [2, 3, 4, 5]
+    with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
+        with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            params_list = [(k, v) for k, v in address.items() if v]
+            # 处理省市区标注错误的问题
+            params_list.append((2, address[3]))
+            params_list.append((3, address[2]))
+            params_list.append((3, address[4]))
+            for params in params_list:
+                # 查出每个级别符合条件的前缀
+                sql = (
+                    "select full_name from region where region_type=%s and name like %s"
+                )
+                cursor.execute(sql, (params[0], f"%{params[1]}%"))
+                prefixes = [i["full_name"].split(" ") for i in cursor.fetchall()]
+
+                # 合并前缀，构造成地址树
+                # {
+                #     "prov": {
+                #         "city": {
+                #             "dist": ["road"],
+                #         },
+                #     },
+                # }
+                leaf_id = region_types[-1] - region_types[0]
+                for prefix in prefixes:
+                    node = address_tree
+                    for i in range(len(prefix)):
+                        if i == leaf_id:
+                            node.append(prefix[i])
+                        elif i == leaf_id - 1:
+                            node = node.setdefault(prefix[i], [])
+                        else:
+                            node = node.setdefault(prefix[i], {})
+
+    # 转换为地址链
+    # [["prov", "city", "dist", "road"]]
+    address_chains = flatten_address_tree(address_tree)
+
+    # 转换为地址文本
+    address_texts = ["".join(i) for i in address_chains]
+    raw_address_text = "".join([address[i] for i in region_types if address[i]])
+
+    # 计算编辑距离
+    # 编辑距离用来衡量两个字符串之间相似度
+    # 代表从一个字符串A变成另一个字符串B，所需要的最少单字符编辑操作次数
+    # 操作包括插入、删除、替换
+    # SequenceMatcher计算两个序列基于最长公共子序列的相似比率
+    scores = []
+    for i in address_texts:
+        scores.append(SequenceMatcher(None, i, raw_address_text).ratio())
+    correct_address_chain = address_chains[scores.index(max(scores))]
+
+    # 取分数最高的结果
+    correct_address = {k: None for k in region_types}
+    for i in range(len(correct_address_chain)):
+        region_type_id = i + region_types[0]
+        correct_address[region_type_id] = correct_address_chain[i]
+    return correct_address
 
 
 if __name__ == "__main__":
@@ -167,7 +146,7 @@ if __name__ == "__main__":
     text = [
         "中国浙江省杭州市余杭区葛墩路27号楼",
         "北京市通州区永乐店镇27号楼",
-        "北京市市辖区高地街道27号楼",
+        "北京市市辖区27号楼",
         "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
         "甘肃省南市文县碧口镇27号楼",
         "陕西省渭南市华阴市罗镇27号楼",
