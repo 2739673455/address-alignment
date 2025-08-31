@@ -80,39 +80,42 @@ def check_address(address: dict[int, str]) -> dict[int, str]:
 
     address_tree = {}
     region_types = [2, 3, 4, 5]
+    leaf_id = region_types[-1] - region_types[0]
     with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
         with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            params_list = [(k, v) for k, v in address.items() if v]
-            # 处理省市区标注错误的问题
-            params_list.append((2, address[3]))
-            params_list.append((3, address[2]))
-            params_list.append((3, address[4]))
-            for params in params_list:
-                # 查出每个级别符合条件的前缀
-                sql = (
-                    "select full_name from region where region_type=%s and name like %s"
-                )
-                cursor.execute(sql, (params[0], f"%{params[1]}%"))
-                prefixes = [i["full_name"].split(" ") for i in cursor.fetchall()]
+            params_list = [(k, v) for k, v in address.items()]
+            # 处理 省 市 区 标签错位
+            params_list.extend([(2, address[3]), (3, address[2]), (3, address[4])])
+            # 过滤空值
+            params_list = [(i[0], f"%{i[1]}%") for i in params_list if i[1]]
 
-                # 合并前缀，构造成地址树
-                # {
-                #     "prov": {
-                #         "city": {
-                #             "dist": ["road"],
-                #         },
-                #     },
-                # }
-                leaf_id = region_types[-1] - region_types[0]
-                for prefix in prefixes:
-                    node = address_tree
-                    for i in range(len(prefix)):
-                        if i == leaf_id:
-                            node.append(prefix[i])
-                        elif i == leaf_id - 1:
-                            node = node.setdefault(prefix[i], [])
-                        else:
-                            node = node.setdefault(prefix[i], {})
+            placeholders = "(region_type=%s and name like %s)"
+            params = [i for pair in params_list for i in pair]
+            cursor.execute(
+                f"select region_type, full_name from region where {placeholders}"
+                + (" or " + placeholders) * (len(params_list) - 1),
+                params,
+            )
+            rows = cursor.fetchall()
+            prefixes = [row["full_name"].split(" ") for row in rows]
+
+            # 合并前缀，构造成地址树
+            # {
+            #     "prov": {
+            #         "city": {
+            #             "dist": ["road"],
+            #         },
+            #     },
+            # }
+            for prefix in prefixes:
+                node = address_tree
+                for i in range(len(prefix)):
+                    if i == leaf_id:
+                        node.append(prefix[i])
+                    elif i == leaf_id - 1:
+                        node = node.setdefault(prefix[i], [])
+                    else:
+                        node = node.setdefault(prefix[i], {})
 
     # 转换为地址链
     # [["prov", "city", "dist", "road"]]
@@ -134,9 +137,7 @@ def check_address(address: dict[int, str]) -> dict[int, str]:
 
     # 取分数最高的结果
     correct_address = {k: None for k in region_types}
-    for i in range(len(correct_address_chain)):
-        region_type_id = i + region_types[0]
-        correct_address[region_type_id] = correct_address_chain[i]
+    correct_address.update(zip(region_types, correct_address_chain))
     return correct_address
 
 
