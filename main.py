@@ -47,18 +47,18 @@ def model_go(train=0, test=0, inference=0, model_params_path=None):
         elif isinstance(res, list):
             for a_text, a_res in zip(text, res):
                 for t, r in zip(a_text, a_res):
-                    print(f"{t}-{r}", end="\n")
+                    print(f"{t}\t{r}", end="\n")
 
 
 text = [
-    "中国浙江省杭州市余杭区葛墩路27号楼",
-    "北京市通州区永乐店镇27号楼",
-    "北京市市辖区高地街道27号楼",
-    "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
-    "甘肃省南市文县碧口镇27号楼",
-    "陕西省渭南市华阴市罗镇27号楼",
-    "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
-    "广州市花都区花东镇27号楼",
+    # "中国浙江省杭州市余杭区葛墩路27号楼",
+    # "北京市市辖区通州区永乐店镇27号楼",
+    "北京市市辖区东风街道27号楼",
+    # "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
+    # "甘肃省南市文县碧口镇27号楼",
+    # "陕西省渭南市华阴市罗镇27号楼",
+    # "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
+    # "广州市花都区花东镇27号楼",
 ]
 
-model_go(1, 1, 0, config.FINETUNED_DIR / "address_tagging.pt")
+model_go(0, 0, 1, config.FINETUNED_DIR / "address_tagging.pt")

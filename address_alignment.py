@@ -1,6 +1,6 @@
 import config
 import pymysql
-from difflib import SequenceMatcher
+from rapidfuzz import fuzz
 from models_def import AddressTagging, load_params
 
 
@@ -10,8 +10,8 @@ def address_alignment(text: str, model: AddressTagging) -> dict:
     # 填充各级别地址
     address = address_extract(text, tagging)
     # 校验地址信息
-    correct_address = check_address(address)
-    # print("原始结果:", address)
+    correct_address = check_address(text, address)
+    print("原始结果:", address)
     return {
         "省份": correct_address[2],
         "城市": correct_address[3],
@@ -22,6 +22,7 @@ def address_alignment(text: str, model: AddressTagging) -> dict:
 
 
 def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
+    tagging = [i[2:] for i in tagging]
     # 标签到地区类别 id 映射表
     label_map = {
         "": 0,
@@ -60,11 +61,11 @@ def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
     return address
 
 
-def check_address(address: dict[int, str]) -> dict[int, str]:
+def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
     """校验地址"""
 
     def flatten_address_tree(tree, chain=[]):
-        """将树展平成地址链"""
+        """将树展平"""
         chains = []
         # 非叶节点
         if isinstance(tree, dict) and tree:
@@ -78,9 +79,7 @@ def check_address(address: dict[int, str]) -> dict[int, str]:
             chains.append(chain)
         return chains
 
-    address_tree = {}
     region_types = [2, 3, 4, 5]
-    leaf_id = region_types[-1] - region_types[0]
     with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
         with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
             params_list = [(k, v) for k, v in address.items()]
@@ -89,6 +88,7 @@ def check_address(address: dict[int, str]) -> dict[int, str]:
             # 过滤空值
             params_list = [(i[0], f"%{i[1]}%") for i in params_list if i[1]]
 
+            # 将多个(region_type=%s, name like %s)条件用or拼接,查询每个层级对应的full_name
             placeholders = "(region_type=%s and name like %s)"
             params = [i for pair in params_list for i in pair]
             cursor.execute(
@@ -99,45 +99,53 @@ def check_address(address: dict[int, str]) -> dict[int, str]:
             rows = cursor.fetchall()
             prefixes = [row["full_name"].split(" ") for row in rows]
 
-            # 合并前缀，构造成地址树
-            # {
-            #     "prov": {
-            #         "city": {
-            #             "dist": ["road"],
-            #         },
-            #     },
-            # }
-            for prefix in prefixes:
-                node = address_tree
-                for i in range(len(prefix)):
-                    if i == leaf_id:
-                        node.append(prefix[i])
-                    elif i == leaf_id - 1:
-                        node = node.setdefault(prefix[i], [])
-                    else:
-                        node = node.setdefault(prefix[i], {})
+    print("查询过滤条件:", params_list)
+    print("所有前缀:", prefixes)
 
-    # 转换为地址链
+    # 合并前缀
+    # {
+    #     "prov": {
+    #         "city": {
+    #             "dist": ["road"],
+    #         },
+    #     },
+    # }
+    address_tree = {}
+    leaf_id = region_types[-1] - region_types[0]
+    for prefix in prefixes:
+        node = address_tree
+        for i in range(len(prefix)):
+            if i == leaf_id:
+                node.append(prefix[i])
+            elif i == leaf_id - 1:
+                node = node.setdefault(prefix[i], [])
+            else:
+                node = node.setdefault(prefix[i], {})
+
+    print("地址树:", address_tree)
+
+    # 展平
     # [["prov", "city", "dist", "road"]]
     address_chains = flatten_address_tree(address_tree)
 
     # 转换为地址文本
     address_texts = ["".join(i) for i in address_chains]
-    raw_address_text = "".join([address[i] for i in region_types if address[i]])
 
-    # 计算编辑距离
+    print("地址文本:", address_texts)
+
+    # 基于编辑距离计算两字符串的相似度
     # 编辑距离用来衡量两个字符串之间相似度
-    # 代表从一个字符串A变成另一个字符串B，所需要的最少单字符编辑操作次数
-    # 操作包括插入、删除、替换
-    # SequenceMatcher计算两个序列基于最长公共子序列的相似比率
-    scores = []
-    for i in address_texts:
-        scores.append(SequenceMatcher(None, i, raw_address_text).ratio())
-    correct_address_chain = address_chains[scores.index(max(scores))]
+    # 表示从一个字符串A变成另一个字符串B，所需要的最少单字符编辑操作次数
+    # 编辑操作包括插入、删除、替换
+    scores = [fuzz.ratio(i, text) for i in address_texts]
 
     # 取分数最高的结果
     correct_address = {k: None for k in region_types}
+    correct_address_chain = address_chains[scores.index(max(scores))]
     correct_address.update(zip(region_types, correct_address_chain))
+
+    for i in zip(scores, address_texts):
+        print(i)
     return correct_address
 
 
@@ -145,14 +153,15 @@ if __name__ == "__main__":
     model = AddressTagging(config.BERT_MODEL, config.LABELS)
     load_params(model, config.FINETUNED_DIR / "address_tagging.pt")
     text = [
-        "中国浙江省杭州市余杭区葛墩路27号楼",
-        "北京市通州区永乐店镇27号楼",
-        "北京市市辖区27号楼",
-        "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
-        "甘肃省南市文县碧口镇27号楼",
-        "陕西省渭南市华阴市罗镇27号楼",
-        "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
-        "广州市花都区花东镇27号楼",
+        # "中国浙江省杭州市余杭区葛墩路27号楼",
+        # "北京市市辖区通州区永乐店镇27号楼",
+        "北京市市辖区东风街道27号楼",
+        # "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
+        # "甘肃省南市文县碧口镇27号楼",
+        # "陕西省渭南市华阴市罗镇27号楼",
+        # "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
+        # "广州市花都区花东镇27号楼",
     ]
     for i in text:
-        print(address_alignment(i, model))
+        address_dict = address_alignment(i, model)
+        print(address_dict)

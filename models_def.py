@@ -54,7 +54,7 @@ class AddressTagging(torch.nn.Module):
             ).to(device)
             outputs = self(inputs["input_ids"], inputs["attention_mask"])
             preds = torch.argmax(outputs["logits"], dim=-1).detach().cpu()
-            # 处理子词
+            # 处理子词(如有必要)
             for batch_idx, pred in enumerate(preds):
                 word_ids = inputs.word_ids(batch_index=batch_idx)
                 current_word = None
@@ -63,6 +63,6 @@ class AddressTagging(torch.nn.Module):
                     if word_id is not None and word_id != current_word:
                         current_word = word_id
                         label = self.label_list[pred[idx].item()]
-                        tokens_pred.append(label[2:])
+                        tokens_pred.append(label)
                 res.append(tokens_pred)
         return res if isinstance(text, list) else res[0]
