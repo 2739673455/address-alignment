@@ -82,7 +82,7 @@ def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
     region_types = [2, 3, 4, 5]
     with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
         with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            params_list = [(k, v) for k, v in address.items()]
+            params_list = [(k, address[k]) for k in region_types]
             # 处理 省 市 区 标签错位
             params_list.extend([(2, address[3]), (3, address[2]), (3, address[4])])
             # 过滤空值
@@ -90,17 +90,14 @@ def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
 
             # 将多个(region_type=%s, name like %s)条件用or拼接,查询每个层级对应的full_name
             placeholders = "(region_type=%s and name like %s)"
-            params = [i for pair in params_list for i in pair]
-            cursor.execute(
+            sql = (
                 f"select region_type, full_name from region where {placeholders}"
-                + (" or " + placeholders) * (len(params_list) - 1),
-                params,
+                + f" or {placeholders}" * (len(params_list) - 1)
             )
+            params = [i for pair in params_list for i in pair]
+            cursor.execute(sql, params)
             rows = cursor.fetchall()
             prefixes = [row["full_name"].split(" ") for row in rows]
-
-    print("查询过滤条件:", params_list)
-    print("所有前缀:", prefixes)
 
     # 合并前缀
     # {
@@ -122,16 +119,12 @@ def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
             else:
                 node = node.setdefault(prefix[i], {})
 
-    print("地址树:", address_tree)
-
     # 展平
     # [["prov", "city", "dist", "road"]]
     address_chains = flatten_address_tree(address_tree)
 
     # 转换为地址文本
     address_texts = ["".join(i) for i in address_chains]
-
-    print("地址文本:", address_texts)
 
     # 基于编辑距离计算两字符串的相似度
     # 编辑距离用来衡量两个字符串之间相似度
@@ -144,8 +137,6 @@ def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
     correct_address_chain = address_chains[scores.index(max(scores))]
     correct_address.update(zip(region_types, correct_address_chain))
 
-    for i in zip(scores, address_texts):
-        print(i)
     return correct_address
 
 
@@ -153,14 +144,14 @@ if __name__ == "__main__":
     model = AddressTagging(config.BERT_MODEL, config.LABELS)
     load_params(model, config.FINETUNED_DIR / "address_tagging.pt")
     text = [
-        # "中国浙江省杭州市余杭区葛墩路27号楼",
-        # "北京市市辖区通州区永乐店镇27号楼",
+        "中国浙江省杭州市余杭区葛墩路27号楼",
+        "北京市市辖区通州区永乐店镇27号楼",
         "北京市市辖区东风街道27号楼",
-        # "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
-        # "甘肃省南市文县碧口镇27号楼",
-        # "陕西省渭南市华阴市罗镇27号楼",
-        # "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
-        # "广州市花都区花东镇27号楼",
+        "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
+        "甘肃省南市文县碧口镇27号楼",
+        "陕西省渭南市华阴市罗镇27号楼",
+        "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
+        "广州市花都区花东镇27号楼",
     ]
     for i in text:
         address_dict = address_alignment(i, model)
