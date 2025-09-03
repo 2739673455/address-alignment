@@ -3,6 +3,7 @@ from datetime import datetime
 from train import AddressTaggingTrainer
 from preprocess import AddressTaggingProcessor
 from models_def import AddressTagging, load_params
+from transformers import BertForTokenClassification
 from torch.utils.tensorboard.writer import SummaryWriter
 
 batch_size = 16
@@ -51,14 +52,14 @@ def model_go(train=0, test=0, inference=0, model_params_path=None):
 
 
 text = [
-    # "中国浙江省杭州市余杭区葛墩路27号楼",
-    # "北京市市辖区通州区永乐店镇27号楼",
+    "中国浙江省杭州市余杭区葛墩路27号楼",
+    "北京市市辖区通州区永乐店镇27号楼",
     "北京市市辖区东风街道27号楼",
-    # "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
-    # "甘肃省南市文县碧口镇27号楼",
-    # "陕西省渭南市华阴市罗镇27号楼",
-    # "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
-    # "广州市花都区花东镇27号楼",
+    "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
+    "甘肃省南市文县碧口镇27号楼",
+    "陕西省渭南市华阴市罗镇27号楼",
+    "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
+    "广州市花都区花东镇27号楼",
 ]
 
 model_go(0, 0, 1, config.FINETUNED_DIR / "address_tagging.pt")
