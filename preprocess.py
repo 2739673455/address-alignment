@@ -120,30 +120,10 @@ class AddressTaggingProcessor(Processor):
         )
         input_ids = inputs["input_ids"]
         attention_mask = inputs["attention_mask"]
-
-        all_labels = []
-        for i, labels in enumerate(examples["labels"]):
-            word_ids = inputs.word_ids(batch_index=i)
-            aligned_labels = self._align_labels_with_tokens(labels, word_ids)
-            all_labels.append(aligned_labels)
+        labels = examples["labels"]
 
         return {
             "input_ids": input_ids,
             "attention_mask": attention_mask,
-            "labels": all_labels,
+            "labels": labels,
         }
-
-    def _align_labels_with_tokens(self, labels, word_ids):
-        """
-        标签与 token 对齐
-        如果一个词被分为多个子词，则第一个 token 的标签为词的标签，其余为 -100
-        """
-        aligned_labels = []
-        previous_word_idx = None
-        for word_idx in word_ids:
-            if word_idx and word_idx != previous_word_idx:
-                aligned_labels.append(labels[word_idx])
-            else:
-                aligned_labels.append(-100)
-            previous_word_idx = word_idx
-        return aligned_labels
