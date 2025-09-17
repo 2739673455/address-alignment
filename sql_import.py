@@ -9,7 +9,7 @@ tag = {
 
 
 # 导入数据到 MySQL
-def create_database(mysql_config, sql_file_path):
+def import_db(mysql_config, sql_file_path):
     """使用 sql 文件创建数据库并导入数据"""
 
     mysql_cmd_prefix = [
@@ -48,4 +48,4 @@ def create_database(mysql_config, sql_file_path):
     print(f"{tag['success']} 表单数据导入成功")
 
 
-create_database(config.MYSQL_CONFIG, config.SQL_FILE_PATH)
+import_db(config.MYSQL_CONFIG, config.SQL_FILE_PATH)

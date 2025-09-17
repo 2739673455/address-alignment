@@ -9,6 +9,6 @@
 ├── templates/              # 网页模板
 ├── config.py               # 配置文件
 ├── token_classification.py # 模型训练
-├── data_prepare.py         # 数据准备
+├── sql_import.py           # 导入数据库
 ├── address_alignment.py    # 地址对齐
 └── app.py                  # web服务

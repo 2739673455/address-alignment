@@ -5,11 +5,12 @@ from pydantic import BaseModel, Field
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from address_alignment import address_alignment
-from models_def import AddressTagging, load_params
+from transformers import BertForTokenClassification, BertTokenizerFast
 
 # 加载模型
-model = AddressTagging(config.BERT_MODEL, config.LABELS)
-load_params(model, config.FINETUNED_PATH / "address_tagging.pt")
+model_path = config.FINETUNED_PATH / "checkpoint-680"
+model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
+tokenizer = BertTokenizerFast.from_pretrained(model_path)
 
 # 创建 FastAPI 实例
 app = FastAPI()
@@ -38,7 +39,9 @@ async def homepage():
 @app.post("/address_alignment")
 async def handle_message(request: AddressAlignmentRequest) -> AddressAlignmentResponse:
     user_message = request.message
-    address = address_alignment(user_message, model)
+    address = address_alignment(
+        user_message, model, tokenizer, config.LABELS, config.MYSQL_CONFIG
+    )
     res = AddressAlignmentResponse(
         province=address["省份"],
         city=address["城市"],

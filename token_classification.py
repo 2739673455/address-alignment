@@ -76,6 +76,7 @@ def get_classification_dataset(
             max_length=max_input_len,
             is_split_into_words=True,
         )
+        # label 中与 [CLS] 和 [SEP] 对应的位置设置为 -100
         labels = [
             [
                 label_seq[j] if j is not None else -100
@@ -125,8 +126,8 @@ def train(model_path: Path):
     training_args = TrainingArguments(
         output_dir=config.FINETUNED_PATH,  # 保存路径
         num_train_epochs=5,  # 训练轮次
-        per_device_train_batch_size=32,  # 训练批次
-        per_device_eval_batch_size=32,  # 验证批次
+        per_device_train_batch_size=64,  # 训练批次
+        per_device_eval_batch_size=64,  # 验证批次
         learning_rate=2e-5,  # 学习率
         warmup_ratio=0.1,  # 预热比例
         lr_scheduler_type="linear",  # 学习率调度器
@@ -229,21 +230,21 @@ def predict(
 
 
 if __name__ == "__main__":
-    # train(config.BERT_MODEL)
+    train(config.BERT_MODEL)
 
-    model_path = config.FINETUNED_PATH / "checkpoint-1000"
-    model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
-    tokenizer = BertTokenizerFast.from_pretrained(model_path)
-    texts = [
-        "中国浙江省杭州市余杭区葛墩路27号楼",
-        "北京市市辖区通州区永乐店镇27号楼",
-        "北京市市辖区东风街道27号楼",
-        "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
-        "甘肃省南市文县碧口镇27号楼",
-        "陕西省渭南市华阴市罗镇27号楼",
-        "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
-        "广州市花都区花东镇27号楼",
-    ]
-    res = predict(texts, model, tokenizer, config.LABELS)
-    for t, r in zip(texts, res):
-        print(t, r)
+    # model_path = config.FINETUNED_PATH / "checkpoint-680"
+    # model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
+    # tokenizer = BertTokenizerFast.from_pretrained(model_path)
+    # texts = [
+    #     "中国浙江省杭州市余杭区葛墩路27号楼",
+    #     "北京市市辖区通州区永乐店镇27号楼",
+    #     "北京市市辖区东风街道27号楼",
+    #     "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
+    #     "甘肃省南市文县碧口镇27号楼",
+    #     "陕西省渭南市华阴市罗镇27号楼",
+    #     "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
+    #     "广州市花都区花东镇27号楼",
+    # ]
+    # res = predict(texts, model, tokenizer, config.LABELS)
+    # for t, r in zip(texts, res):
+    #     print(t, r)

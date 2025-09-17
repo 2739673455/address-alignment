@@ -1,17 +1,17 @@
 import config
 import pymysql
 from rapidfuzz import fuzz
-from models_def import AddressTagging, load_params
+from token_classification import predict
+from transformers import BertForTokenClassification, BertTokenizerFast
 
 
-def address_alignment(text: str, model: AddressTagging) -> dict:
-    # 获取标注结果
-    tagging = model.predict(text)
-    # 填充各级别地址
+def address_alignment(text: str, model, tokenizer, label_name, mysql_config) -> dict:
+    # 序列标注
+    tagging = predict(text, model, tokenizer, label_name)
+    # 提取各级别地址
     address = address_extract(text, tagging)
     # 校验地址信息
-    correct_address = check_address(text, address)
-    print("原始结果:", address)
+    correct_address = address_check(text, address, mysql_config)
     return {
         "省份": correct_address[2],
         "城市": correct_address[3],
@@ -22,6 +22,7 @@ def address_alignment(text: str, model: AddressTagging) -> dict:
 
 
 def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
+    """地址提取"""
     tagging = [i[2:] for i in tagging]
     # 标签到地区类别 id 映射表
     label_map = {
@@ -51,18 +52,15 @@ def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
     tag_len = len(tagging)
     for end_pos in range(tag_len):
         # 如果到结尾、或 end_pos 的下一个位置不是同一类
-        if (end_pos == tag_len - 1) or (
-            label_map[tagging[end_pos + 1]] != label_map[tagging[start_pos]]
-        ):
-            if label_map[tagging[start_pos]] != 0:
-                # 添加片段
+        if (end_pos == tag_len - 1) or (tagging[end_pos + 1] != tagging[start_pos]):
+            if tagging[start_pos] != "":
                 address[label_map[tagging[start_pos]]] = text[start_pos : end_pos + 1]
             start_pos = end_pos + 1
     return address
 
 
-def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
-    """校验地址"""
+def address_check(text: str, address: dict[int, str], mysql_config) -> dict[int, str]:
+    """地址校验"""
 
     def flatten_address_tree(tree, chain=[]):
         """将树展平"""
@@ -80,7 +78,7 @@ def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
         return chains
 
     region_types = [2, 3, 4, 5]
-    with pymysql.connect(**config.MYSQL_CONFIG) as mysql_conn:
+    with pymysql.connect(**mysql_config) as mysql_conn:
         with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
             params_list = [(k, address[k]) for k in region_types]
             # 处理 省 市 区 标签错位
@@ -141,8 +139,9 @@ def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
 
 
 if __name__ == "__main__":
-    model = AddressTagging(config.BERT_MODEL, config.LABELS)
-    load_params(model, config.FINETUNED_PATH / "address_tagging.pt")
+    model_path = config.FINETUNED_PATH / "checkpoint-680"
+    model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
+    tokenizer = BertTokenizerFast.from_pretrained(model_path)
     text = [
         "中国浙江省杭州市余杭区葛墩路27号楼",
         "北京市市辖区通州区永乐店镇27号楼",
@@ -154,5 +153,7 @@ if __name__ == "__main__":
         "广州市花都区花东镇27号楼",
     ]
     for i in text:
-        address_dict = address_alignment(i, model)
+        address_dict = address_alignment(
+            i, model, tokenizer, config.LABELS, config.MYSQL_CONFIG
+        )
         print(address_dict)
