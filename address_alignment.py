@@ -142,7 +142,7 @@ def check_address(text: str, address: dict[int, str]) -> dict[int, str]:
 
 if __name__ == "__main__":
     model = AddressTagging(config.BERT_MODEL, config.LABELS)
-    load_params(model, config.FINETUNED_DIR / "address_tagging.pt")
+    load_params(model, config.FINETUNED_PATH / "address_tagging.pt")
     text = [
         "中国浙江省杭州市余杭区葛墩路27号楼",
         "北京市市辖区通州区永乐店镇27号楼",

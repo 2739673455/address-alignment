@@ -1,5 +1,5 @@
+import config
 import subprocess
-from config import MYSQL_CONFIG, BASE_DIR
 
 tag = {
     "error": "\033[1;31m[ERROR]\033[0m",
@@ -48,4 +48,4 @@ def create_database(mysql_config, sql_file_path):
     print(f"{tag['success']} 表单数据导入成功")
 
 
-create_database(MYSQL_CONFIG, BASE_DIR / "data" / "region.sql")
+create_database(config.MYSQL_CONFIG, config.SQL_FILE_PATH)

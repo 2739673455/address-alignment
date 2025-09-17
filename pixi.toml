@@ -1,0 +1,20 @@
+[workspace]
+authors = ["kodey <k2739673455@gmail.com>"]
+channels = ["conda-forge"]
+name = "address-alignment"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.11.*"
+
+[pypi-dependencies]
+torch = { version = "*", index = "https://download.pytorch.org/whl/cu128" }
+torchvision = { version = "*", index = "https://download.pytorch.org/whl/cu128" }
+torchaudio = { version = "*", index = "https://download.pytorch.org/whl/cu128" }
+datasets = ">=4.1.0, <5"
+transformers = ">=4.56.1, <5"
+scikit-learn = ">=1.7.2, <2"
+accelerate = ">=1.10.1, <2"

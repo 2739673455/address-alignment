@@ -10,25 +10,24 @@ MYSQL_CONFIG = {
     "charset": "utf8mb4",
 }
 
-# -------------------- 路径设置 --------------------
-# 项目根目录
-BASE_DIR = Path(__file__).parent
+# SQl文件路径
+SQL_FILE_PATH = Path("data/region.sql")
 # 原始数据路径
-RAW_DATA_DIR = BASE_DIR / "data/raw"
+RAW_DATA_PATH = Path("data/raw")
 # 已处理数据存放路径
-PROCESSED_DATA_DIR = BASE_DIR / "data/processed"
+PROCESSED_DATA_PATH = Path("data/processed")
 # 模型参数保存路径
-FINETUNED_DIR = BASE_DIR / "finetuned"
+FINETUNED_PATH = Path("finetuned")
 # TensorBoard 日志保存路径
-LOGS_DIR = BASE_DIR / "logs"
+LOGS_PATH = Path("logs")
 # 本地预训练模型路径
-PRETRAINED_DIR = Path("~/models").expanduser()
-BERT_MODEL = PRETRAINED_DIR / "bert-base-chinese"
+PRETRAINED_PATH = Path("~/models").expanduser()
+BERT_MODEL = PRETRAINED_PATH / "bert-base-chinese"
 
 # 设备
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+# 标签
 LABELS = [
     "O",
     "B-assist",
