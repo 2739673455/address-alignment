@@ -136,8 +136,8 @@ def train(model_path: Path):
         fp16=not is_bf16_supported(),  # 是否使用fp16
         eval_strategy="steps",  # 验证策略
         save_strategy="steps",  # 保存策略
-        eval_steps=1000,  # 验证步数
-        save_steps=1000,  # 保存步数
+        eval_steps=500,  # 验证步数
+        save_steps=500,  # 保存步数
         logging_steps=200,  # 日志记录步数
         logging_dir=config.LOGS_PATH,  # 日志保存路径
         save_total_limit=1,  # 模型保存数量限制
@@ -182,8 +182,8 @@ def train(model_path: Path):
     trainer.train()
 
     # 测试
-    test_metrics = trainer.evaluate(eval_dataset=test_dataset, metric_key_prefix="test")
-    print(test_metrics)
+    # test_metrics = trainer.evaluate(eval_dataset=test_dataset, metric_key_prefix="test")
+    # print(test_metrics)
 
 
 @torch.inference_mode()
@@ -192,7 +192,7 @@ def predict(
     model: BertForTokenClassification,
     tokenizer: BertTokenizerFast,
     label_names: list[str],
-    batch_size=32,
+    batch_size=64,
 ):
     model.eval()
     # 获取模型所在设备
