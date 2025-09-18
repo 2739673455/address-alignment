@@ -2,6 +2,7 @@ import os
 import json
 import torch
 import config
+import shutil
 import numpy as np
 from pathlib import Path
 from torch.cuda import is_bf16_supported
@@ -146,7 +147,6 @@ def train(model_path: Path):
         greater_is_better=True,  # 指标值越大越好
         disable_tqdm=False,  # 是否禁用进度条
         logging_first_step=True,  # 是否在第一步记录日志
-        load_best_model_at_end=True,  # 训练结束时自动加载最佳模型
     )
 
     # 评估指标
@@ -181,9 +181,27 @@ def train(model_path: Path):
     # 训练
     trainer.train()
 
+    # 最终验证
+    final_eval_metrics = trainer.evaluate()
+    print(final_eval_metrics)
+    # 获取当前最佳模型的f1分数
+    best_metric = getattr(trainer.state, "best_metric", 0.0)
+    best_dir = config.FINETUNED_PATH / "best"
+    # 如果最终验证的f1分数高于之前的最佳分数，则保存模型
+    if final_eval_metrics.get("eval_f1", 0.0) >= best_metric:
+        trainer.save_model(best_dir)
+        tokenizer.save_pretrained(best_dir)
+    # 如果最终模型不是最佳的，则将最佳检查点保存为 best
+    else:
+        best_checkpoint = trainer.state.best_model_checkpoint
+        if best_checkpoint:
+            shutil.rmtree(best_dir)
+            shutil.copytree(best_checkpoint, best_dir, dirs_exist_ok=True)
+            tokenizer.save_pretrained(best_dir)
+
     # 测试
-    # test_metrics = trainer.evaluate(eval_dataset=test_dataset, metric_key_prefix="test")
-    # print(test_metrics)
+    test_metrics = trainer.evaluate(eval_dataset=test_dataset, metric_key_prefix="test")
+    print(test_metrics)
 
 
 @torch.inference_mode()
@@ -232,7 +250,7 @@ def predict(
 if __name__ == "__main__":
     train(config.BERT_MODEL)
 
-    # model_path = config.FINETUNED_PATH / "checkpoint-680"
+    # model_path = config.FINETUNED_PATH / "best"
     # model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
     # tokenizer = BertTokenizerFast.from_pretrained(model_path)
     # texts = [
@@ -246,5 +264,7 @@ if __name__ == "__main__":
     #     "广州市花都区花东镇27号楼",
     # ]
     # res = predict(texts, model, tokenizer, config.LABELS)
-    # for t, r in zip(texts, res):
-    #     print(t, r)
+    # for ts, rs in zip(texts, res):
+    #     for t, r in zip(ts, rs):
+    #         print(t, r)
+    #     print()

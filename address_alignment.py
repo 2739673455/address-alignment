@@ -6,6 +6,7 @@ from transformers import BertForTokenClassification, BertTokenizerFast
 
 
 def address_alignment(text: str, model, tokenizer, label_name, mysql_config) -> dict:
+    """地址对齐"""
     # 序列标注
     tagging = predict(text, model, tokenizer, label_name)
     # 提取各级别地址
@@ -139,7 +140,7 @@ def address_check(text: str, address: dict[int, str], mysql_config) -> dict[int,
 
 
 if __name__ == "__main__":
-    model_path = config.FINETUNED_PATH / "checkpoint-680"
+    model_path = config.FINETUNED_PATH / "best"
     model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
     tokenizer = BertTokenizerFast.from_pretrained(model_path)
     text = [
