@@ -90,7 +90,7 @@ def address_check(text: str, address: dict[int, str], mysql_config) -> dict[int,
             # 将多个(region_type=%s, name like %s)条件用or拼接,查询每个层级对应的full_name
             placeholders = "(region_type=%s and name like %s)"
             sql = (
-                f"select region_type, full_name from region where {placeholders}"
+                f"select full_name from region where {placeholders}"
                 + f" or {placeholders}" * (len(params_list) - 1)
             )
             params = [i for pair in params_list for i in pair]
