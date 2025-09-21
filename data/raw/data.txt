@@ -21564,7 +21564,6 @@ A I-poi
 桃 B-road
 园 I-road
 路 E-road
-口 S-intersection
 银 B-poi
 监 I-poi
 局 E-poi
@@ -41388,7 +41387,6 @@ A B-houseno
 滨 B-road
 海 I-road
 路 E-road
-口 S-intersection
 阳 B-poi
 光 I-poi
 幼 I-poi
@@ -47680,7 +47678,6 @@ _ O
 寰 B-road
 宇 I-road
 路 E-road
-口 S-intersection
 寰 B-poi
 宇 I-poi
 天 I-poi
@@ -49583,7 +49580,6 @@ A B-houseno
 竹 B-road
 林 I-road
 路 E-road
-口 S-intersection
 电 O
 联 O
 
@@ -56599,7 +56595,6 @@ A I-poi
 0 B-road
 号 I-road
 路 E-road
-口 S-intersection
 数 B-devzone
 源 I-devzone
 科 I-devzone
@@ -68698,7 +68693,6 @@ _ O
 花 B-community
 园 I-community
 村 E-community
-口 S-intersection
 
 石 B-city
 家 I-city
@@ -73874,7 +73868,6 @@ A B-poi
 区 E-district
 三 B-road
 路 E-road
-口 S-intersection
 更 B-road
 新 I-road
 街 E-road
@@ -80234,7 +80227,6 @@ A B-subpoi
 山 I-road
 北 I-road
 路 E-road
-口 S-intersection
 中 B-poi
 山 I-poi
 花 I-poi
@@ -82823,7 +82815,6 @@ _ O
 春 B-road
 波 I-road
 弄 E-road
-口 S-intersection
 0 B-roadno
 0 I-roadno
 - I-roadno
@@ -97638,7 +97629,6 @@ A B-subpoi
 城 B-road
 星 I-road
 路 E-road
-口 S-intersection
 钱 B-poi
 江 I-poi
 国 I-poi
@@ -107012,7 +107002,6 @@ A B-houseno
 风 B-road
 帆 I-road
 路 E-road
-口 S-intersection
 天 B-poi
 明 I-poi
 环 I-poi
@@ -108118,7 +108107,6 @@ A I-poi
 狮 B-road
 山 I-road
 路 E-road
-口 S-intersection
 同 B-poi
 城 I-poi
 印 I-poi
@@ -119499,7 +119487,6 @@ A I-cellno
 山 B-community
 董 I-community
 村 E-community
-口 S-intersection
 三 B-district
 门 I-district
 县 E-district
@@ -128497,7 +128484,6 @@ _ O
 二 I-road
 小 I-road
 路 E-road
-口 S-intersection
 进 O
 0 B-distance
 0 I-distance
@@ -129231,7 +129217,6 @@ A B-houseno
 丁 B-road
 字 I-road
 路 E-road
-口 S-intersection
 老 B-poi
 凤 I-poi
 祥 I-poi
@@ -133950,7 +133935,6 @@ _ O
 官 B-road
 渎 I-road
 路 E-road
-口 S-intersection
 巴 B-poi
 黎 I-poi
 婚 I-poi
@@ -146290,7 +146274,6 @@ A B-houseno
 号 E-roadno
 南 B-road
 街 E-road
-口 S-intersection
 浙 B-poi
 北 I-poi
 大 I-poi
@@ -150395,7 +150378,6 @@ A B-houseno
 岗 B-road
 山 I-road
 路 E-road
-口 S-intersection
 
 余 B-district
 姚 I-district
@@ -163146,7 +163128,6 @@ A B-houseno
 牡 B-road
 丹 I-road
 路 E-road
-口 S-intersection
 豪 B-poi
 享 I-poi
 来 I-poi
@@ -167006,7 +166987,6 @@ A B-subpoi
 仁 B-road
 爱 I-road
 路 E-road
-口 S-intersection
 九 B-poi
 洲 I-poi
 芳 I-poi
@@ -172467,7 +172447,6 @@ A B-poi
 新 B-road
 昌 I-road
 路 E-road
-口 S-intersection
 景 B-poi
 昌 I-poi
 大 I-poi
@@ -172634,7 +172613,6 @@ A O
 兴 B-road
 达 I-road
 路 E-road
-口 S-intersection
 
 深 B-city
 圳 I-city
@@ -181265,7 +181243,6 @@ A B-houseno
 余 B-road
 杭 I-road
 路 E-road
-口 S-intersection
 
 浙 B-prov
 江 I-prov
@@ -182148,7 +182125,6 @@ A B-houseno
 芝 I-road
 坞 I-road
 路 E-road
-口 S-intersection
 打 O
 电 O
 话 O
@@ -194701,7 +194677,6 @@ A B-houseno
 康 B-road
 宁 I-road
 路 E-road
-口 S-intersection
 0 B-roadno
 0 I-roadno
 0 I-roadno

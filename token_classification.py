@@ -36,17 +36,22 @@ def get_classification_dataset(
             return
         # 处理 txt 中数据为字典格式
         with open(src_path, "r", encoding="utf-8") as f:
+            examples = []
             # 按 \n\n 分成块，每块是一个样本
             blocks = f.read().split("\n\n")
-            examples = [
-                {"text": list(words), "labels": list(labels)}
-                for block in blocks
-                if block.strip()
-                for lines in [
-                    [line.strip().split() for line in block.split("\n") if line.strip()]
-                ]
-                for words, labels in [zip(*lines)]
-            ]
+            for block in blocks:
+                if not block.strip():
+                    continue
+                text, labels = [], []
+                # 按 \n 分成行，每行是一个词和标签
+                for line in block.split("\n"):
+                    if not line.strip():
+                        continue
+                    word, label = line.strip().split()
+                    text.append(word)
+                    label = label[:2] + config.LABELE_MAP[label[2:]]
+                    labels.append(label)
+                examples.append({"text": text, "labels": labels})
         # 将数据保存为 jsonl 格式
         with open(json_path, "w", encoding="utf-8") as f:
             json_lines = map(
@@ -126,12 +131,12 @@ def train(model_path: Path):
     # 训练参数
     training_args = TrainingArguments(
         output_dir=config.FINETUNED_PATH,  # 保存路径
-        num_train_epochs=5,  # 训练轮次
+        num_train_epochs=20,  # 训练轮次
         per_device_train_batch_size=64,  # 训练批次
         per_device_eval_batch_size=64,  # 验证批次
-        learning_rate=2e-5,  # 学习率
-        warmup_ratio=0.1,  # 预热比例
-        lr_scheduler_type="linear",  # 学习率调度器
+        learning_rate=3e-5,  # 学习率
+        warmup_ratio=0.2,  # 预热比例
+        lr_scheduler_type="cosine",  # 学习率调度器
         weight_decay=0.01,  # 权重衰减
         bf16=is_bf16_supported(),  # 是否使用bf16
         fp16=not is_bf16_supported(),  # 是否使用fp16
@@ -187,7 +192,7 @@ def train(model_path: Path):
     # 获取当前最佳模型的f1分数
     best_metric = getattr(trainer.state, "best_metric", 0.0)
     best_dir = config.FINETUNED_PATH / "best"
-    # 如果最终验证的f1分数高于之前的最佳分数，则保存模型
+    # 如果最终验证的f1分数高于之前的最佳分数，则保存为最佳模型
     if final_eval_metrics.get("eval_f1", 0.0) >= best_metric:
         trainer.save_model(best_dir)
         tokenizer.save_pretrained(best_dir)
@@ -195,7 +200,8 @@ def train(model_path: Path):
     else:
         best_checkpoint = trainer.state.best_model_checkpoint
         if best_checkpoint:
-            shutil.rmtree(best_dir)
+            if os.path.exists(best_dir):
+                shutil.rmtree(best_dir)
             shutil.copytree(best_checkpoint, best_dir, dirs_exist_ok=True)
             tokenizer.save_pretrained(best_dir)
 
@@ -248,7 +254,7 @@ def predict(
 
 
 if __name__ == "__main__":
-    train(config.BERT_MODEL)
+    train(config.ROBERTA_SMALL)
 
     # model_path = config.FINETUNED_PATH / "best"
     # model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)

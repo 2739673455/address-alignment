@@ -22,14 +22,28 @@ FINETUNED_PATH = Path("finetuned")
 LOGS_PATH = Path("logs")
 # 本地预训练模型路径
 PRETRAINED_PATH = Path("~/models").expanduser()
-BERT_MODEL = PRETRAINED_PATH / "bert-base-chinese"
+BERT_BASE = PRETRAINED_PATH / "bert-base-chinese"
+ROBERTA_SMALL = PRETRAINED_PATH / "roberta-small-wwm-chinese-cluecorpussmall"
 
 # 设备
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 标签
-LABELS = [
+RAW_LABELS = [
     "O",
+    "B-prov",
+    "I-prov",
+    "E-prov",
+    "B-city",
+    "I-city",
+    "E-city",
+    "B-district",
+    "I-district",
+    "S-district",
+    "E-district",
+    "B-road",
+    "I-road",
+    "E-road",
     "B-assist",
     "I-assist",
     "S-assist",
@@ -37,9 +51,6 @@ LABELS = [
     "B-cellno",
     "I-cellno",
     "E-cellno",
-    "B-city",
-    "I-city",
-    "E-city",
     "B-community",
     "I-community",
     "S-community",
@@ -47,10 +58,6 @@ LABELS = [
     "B-devzone",
     "I-devzone",
     "E-devzone",
-    "B-district",
-    "I-district",
-    "S-district",
-    "E-district",
     "B-floorno",
     "I-floorno",
     "E-floorno",
@@ -61,12 +68,6 @@ LABELS = [
     "I-poi",
     "S-poi",
     "E-poi",
-    "B-prov",
-    "I-prov",
-    "E-prov",
-    "B-road",
-    "I-road",
-    "E-road",
     "B-roadno",
     "I-roadno",
     "E-roadno",
@@ -86,4 +87,47 @@ LABELS = [
     "B-village_group",
     "I-village_group",
     "E-village_group",
+]
+
+LABELE_MAP = {
+    "": "",
+    "prov": "prov",
+    "city": "city",
+    "district": "district",
+    "road": "road",
+    "intersection": "road",
+    "town": "road",
+    "roadno": "detail",
+    "cellno": "detail",
+    "community": "detail",
+    "houseno": "detail",
+    "poi": "detail",
+    "subpoi": "detail",
+    "assist": "detail",
+    "distance": "detail",
+    "village_group": "detail",
+    "floorno": "detail",
+    "devzone": "detail",
+}
+
+LABELS = [
+    "O",
+    "B-prov",
+    "I-prov",
+    "E-prov",
+    "B-city",
+    "I-city",
+    "E-city",
+    "B-district",
+    "I-district",
+    "E-district",
+    "S-district",
+    "B-road",
+    "I-road",
+    "E-road",
+    "S-road",
+    "B-detail",
+    "I-detail",
+    "E-detail",
+    "S-detail",
 ]

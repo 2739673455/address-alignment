@@ -32,19 +32,7 @@ def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
         "city": 3,
         "district": 4,
         "road": 5,
-        "intersection": 5,
-        "town": 5,
-        "roadno": 6,
-        "cellno": 6,
-        "community": 6,
-        "houseno": 6,
-        "poi": 6,
-        "subpoi": 6,
-        "assist": 6,
-        "distance": 6,
-        "village_group": 6,
-        "floorno": 6,
-        "devzone": 6,
+        "detail": 6,
     }
     # 各级别对应地址信息
     address = {2: None, 3: None, 4: None, 5: None, 6: None}
