@@ -8,7 +8,7 @@ from address_alignment import address_alignment
 from transformers import BertForTokenClassification, BertTokenizerFast
 
 # 加载模型
-model_path = config.FINETUNED_PATH / "checkpoint-680"
+model_path = config.FINETUNED_PATH / "best"
 model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
 tokenizer = BertTokenizerFast.from_pretrained(model_path)
 
@@ -55,3 +55,13 @@ async def handle_message(request: AddressAlignmentRequest) -> AddressAlignmentRe
 if __name__ == "__main__":
     # 启动服务
     uvicorn.run(app, host="0.0.0.0", port=8089)
+
+# 测试数据：
+#   中国浙江省杭州市余杭区葛墩路27号楼
+#   北京市市辖区通州区永乐店镇27号楼
+#   北京市市辖区东风街道27号楼
+#   新疆维吾尔自治区划阿拉尔市金杨镇27号楼
+#   甘肃省南市文县碧口镇27号楼
+#   陕西省渭南市华阴市罗镇27号楼
+#   西藏自治区拉萨市墨竹工卡县工卡镇27号楼
+#   广州市花都区花东镇27号楼
