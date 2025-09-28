@@ -10,7 +10,7 @@ tag = {
 
 # 导入数据到 MySQL
 def import_db(mysql_config, sql_file_path):
-    """使用 sql 文件创建数据库并导入数据"""
+    """使用 sql 文件建库并导入数据"""
 
     mysql_cmd_prefix = [
         "mysql",
@@ -21,7 +21,7 @@ def import_db(mysql_config, sql_file_path):
         f"--default-character-set={mysql_config['charset']}",
     ]
 
-    # 创建数据库
+    # 建库
     print(f"{tag['processing']} 创建 {mysql_config['database']}")
     cmd = mysql_cmd_prefix + [
         "-e",

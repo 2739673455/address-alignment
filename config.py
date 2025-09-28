@@ -22,7 +22,6 @@ FINETUNED_PATH = Path("finetuned")
 LOGS_PATH = Path("logs")
 # 本地预训练模型路径
 PRETRAINED_PATH = Path("~/models").expanduser()
-BERT_BASE = PRETRAINED_PATH / "bert-base-chinese"
 ROBERTA_SMALL = PRETRAINED_PATH / "roberta-small-wwm-chinese-cluecorpussmall"
 
 # 设备

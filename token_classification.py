@@ -9,17 +9,17 @@ from torch.cuda import is_bf16_supported
 from sklearn.metrics import precision_recall_fscore_support
 from datasets import load_dataset, ClassLabel, load_from_disk
 from transformers import (
-    BertTokenizerFast,
-    BertForTokenClassification,
-    TrainingArguments,
     Trainer,
     EvalPrediction,
+    TrainingArguments,
+    BertTokenizerFast,
+    BertForTokenClassification,
     DataCollatorForTokenClassification,
 )
 
 
 # 数据预处理
-def get_classification_dataset(
+def preprocess(
     src_path: Path,
     tgt_path: Path,
     tokenizer: BertTokenizerFast,
@@ -31,42 +31,11 @@ def get_classification_dataset(
 ):
     """处理分类任务数据集"""
 
-    def _get_json(src_path: Path, json_path: Path):
-        if os.path.exists(json_path):
-            return
-        # 处理 txt 中数据为字典格式
-        with open(src_path, "r", encoding="utf-8") as f:
-            examples = []
-            # 按 \n\n 分成块，每块是一个样本
-            blocks = f.read().split("\n\n")
-            for block in blocks:
-                if not block.strip():
-                    continue
-                text, labels = [], []
-                # 按 \n 分成行，每行是一个词和标签
-                for line in block.split("\n"):
-                    if not line.strip():
-                        continue
-                    word, label = line.strip().split()
-                    text.append(word)
-                    label = label[:2] + config.LABELE_MAP[label[2:]]
-                    labels.append(label)
-                examples.append({"text": text, "labels": labels})
-        # 将数据保存为 jsonl 格式
-        with open(json_path, "w", encoding="utf-8") as f:
-            json_lines = map(
-                lambda x: json.dumps(x, ensure_ascii=False) + "\n", examples
-            )
-            f.writelines(json_lines)
-
-    json_path = src_path.with_suffix(".jsonl")
-    _get_json(src_path, json_path)
-
     if os.path.exists(tgt_path):
         return
     # 读取文件，类别 → int
     label_feature = ClassLabel(names=label_names)
-    datas = load_dataset("json", data_files=str(json_path))["train"].map(
+    datas = load_dataset("json", data_files=str(src_path))["train"].map(
         lambda x: {"labels": [label_feature.str2int(label) for label in x["labels"]]}
     )
     # 随机打乱并切分
@@ -112,8 +81,8 @@ def train(model_path: Path):
     tokenizer = BertTokenizerFast.from_pretrained(model_path)
 
     # 加载数据
-    get_classification_dataset(
-        src_path=config.RAW_DATA_PATH / "data.txt",
+    preprocess(
+        src_path=config.RAW_DATA_PATH / "data.jsonl",
         tgt_path=config.PROCESSED_DATA_PATH,
         tokenizer=tokenizer,
         max_input_len=128,

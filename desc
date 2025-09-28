@@ -2,13 +2,11 @@
 ├── data/
 │   ├── raw/
 │   │   └── data.txt        # 微调数据
-│   └── region.sql          # 地址信息数据库表
-├── pretrained/             # 预训练模型
-│   └── bert-base-chinese/
+│   └── region.sql          # 地址表
 ├── finetuned/              # 模型权重存储目录
 ├── templates/              # 网页模板
 ├── config.py               # 配置文件
-├── token_classification.py # 模型训练
-├── sql_import.py           # 导入数据库
+├── sql_import.py           # 建库并导入数据
+├── token_classification.py # 序列标注模型训练
 ├── address_alignment.py    # 地址对齐
 └── app.py                  # web服务
