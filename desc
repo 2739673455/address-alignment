@@ -1,7 +1,7 @@
 ./
 ├── data/
 │   ├── raw/
-│   │   └── data.txt        # 微调数据
+│   │   └── data.jsonl      # 微调数据
 │   └── region.sql          # 地址表
 ├── finetuned/              # 模型权重存储目录
 ├── templates/              # 网页模板

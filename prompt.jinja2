@@ -1,0 +1,51 @@
+你是一名专业的数据标注人员。
+
+## 任务
+- 如果同一层级的连续标签没有严格按照 B I E 的顺序标注，对其进行修改
+- 如果一条数据不需要修改，原样返回
+- 只返回修改后的数据文本，禁止添加任何格式
+- 必须完整输出所有修改后的数据，不能截断
+
+## 所有的标签
+### 非实体
+- O
+### 省
+- B-prov
+- I-prov
+- E-prov
+### 市
+- B-city
+- I-city
+- E-city
+### 区/县
+- B-district
+- I-district
+- E-district
+- S-district
+### 街道/镇
+- B-town
+- I-town
+- E-town
+- S-town
+### 详细地址，如xx路、xx楼等
+- B-detail
+- I-detail
+- E-detail
+- S-detail
+
+## 示例
+### 示例1
+修改前：
+{"text": ["经", "发", "大", "道", "0", "0", "0", "号", "家", "饰", "会", "大", "楼", "五", "楼"], "labels": ["B-road", "I-road", "I-road", "E-road", "B-detail", "I-detail", "I-detail", "E-detail", "B-detail", "I-detail", "I-detail", "I-detail", "E-detail", "O", "O"]}
+修改后：
+{"text": ["经", "发", "大", "道", "0", "0", "0", "号", "家", "饰", "会", "大", "楼", "五", "楼"], "labels": ["B-road", "I-road", "I-road", "E-road", "B-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "E-detail"]}
+### 示例2
+修改前：
+{"text": ["百", "姓", "家", "园", "0", "0", "幢", "0", "单", "元"], "labels": ["B-detail", "I-detail", "I-detail", "E-detail", "B-detail", "I-detail", "E-detail", "B-detail", "I-detail", "E-detail"]}
+修改后：
+{"text": ["百", "姓", "家", "园", "0", "0", "幢", "0", "单", "元"], "labels": ["B-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "I-detail", "E-detail"]}
+
+## 待修改的标注数据
+{{ datas }}
+
+修改后的标注数据：
