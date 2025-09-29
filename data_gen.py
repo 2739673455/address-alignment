@@ -28,11 +28,22 @@ with (
     for i in range(processed_line_num, len(all_data), batch_size):
         lines = "\n".join([str(d) for d in all_data[i : i + batch_size]])
         prompt = template.render(datas=lines)
-        completion = client.chat.completions.create(
-            model="x-ai/grok-4-fast:free",
+        stream = client.chat.completions.create(
+            model="deepseek/deepseek-chat-v3.1:free",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=8192,
+            max_tokens=16384,
+            stream=True,
         )
-        print(completion)
-        w_f.write(completion.choices[0].message.content + "\n")
-        break
+        completion = []
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                completion.append(delta.content)
+            print(delta.content, end="", flush=True)
+        # 强制在最后添加换行符
+        if not completion[-1].endswith("\n"):
+            completion[-1] += "\n"
+        # 将单引号替换为双引号
+        w_f.write("".join(completion).replace("'", '"'))
+        w_f.flush()
+        print(f"\033[1;32m{i}:{i + batch_size} 已写入\033[0m")
