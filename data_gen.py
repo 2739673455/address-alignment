@@ -1,8 +1,10 @@
 import os
 import json
+import random
 import config
 import asyncio
 import functools
+from faker import Faker
 from pathlib import Path
 from typing import Callable
 from openai import AsyncOpenAI
@@ -66,6 +68,9 @@ def with_valid():
                     len(processed_text) != len(processed_labels)
                 ):
                     raise Exception("数据内容不匹配")
+                for label in processed_labels:
+                    if label not in config.LABELS:
+                        raise Exception("数据标签不匹配")
             return result
 
         return async_wrapper
@@ -134,9 +139,9 @@ async def process_single_batch(i, batch_datas, writer: OrderedWriter):
 
 
 async def main():
-    with open(config.RAW_DATA_PATH / "data.jsonl", "r") as r_f:
+    with open(config.RAW_DATA_PATH / "raw_data.jsonl", "r") as r_f:
         all_data = [json.loads(line) for line in r_f]  # 读取所有数据
-    with open(config.RAW_DATA_PATH / "correct_data.jsonl", "a+") as w_f:
+    with open(config.RAW_DATA_PATH / "new_data.jsonl", "a+") as w_f:
         w_f.seek(0)  # 移动到文件开头
         processed_line_num = len(w_f.readlines())  # 获取已处理的行数
         writer = OrderedWriter(w_f, processed_line_num)
@@ -152,4 +157,39 @@ async def main():
                 tasks.clear()
 
 
-asyncio.run(main())
+def add_name_phone():
+    fake = Faker("zh_CN")
+    with (
+        open(config.RAW_DATA_PATH / "new_data.jsonl", "r") as r_f,
+        open(config.RAW_DATA_PATH / "data.jsonl", "w") as w_f,
+    ):
+        for line in r_f:
+            data = json.loads(line)
+            text = data["text"]
+            labels = data["labels"]
+            name = fake.name()
+            name = list(name)
+            name_labels = ["I-name"] * len(name)
+            name_labels[0] = "B-name"
+            name_labels[-1] = "E-name"
+            phone = fake.phone_number()
+            phone = list(phone)
+            phone_labels = ["I-phone"] * len(phone)
+            phone_labels[0] = "B-phone"
+            phone_labels[-1] = "E-phone"
+            name_phone = name + phone
+            name_phone_labels = name_labels + phone_labels
+            # 随机添加到数据开头或是结尾
+            if random.choices([0, 1], weights=[0.6, 0.4], k=1)[0] == 0:
+                text = name_phone + text
+                labels = name_phone_labels + labels
+            else:
+                text = text + name_phone
+                labels = labels + name_phone_labels
+            w_f.write(
+                json.dumps({"text": text, "labels": labels}, ensure_ascii=False) + "\n"
+            )
+
+
+# asyncio.run(main())
+# add_name_phone()

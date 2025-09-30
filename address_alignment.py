@@ -13,29 +13,23 @@ def address_alignment(text: str, model, tokenizer, label_name, mysql_config) -> 
     address = address_extract(text, tagging)
     # 校验地址信息
     correct_address = address_check(text, address, mysql_config)
-    return {
-        "省份": correct_address[2],
-        "城市": correct_address[3],
-        "区县": correct_address[4],
-        "街道": correct_address[5],
-        "详细地址": address[6],
-    }
+    address.update(correct_address)
+    return address
 
 
 def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
     """地址提取"""
     tagging = [i[2:] for i in tagging]
-    # 标签到地区类别 id 映射表
-    label_map = {
-        "": 0,
-        "prov": 2,
-        "city": 3,
-        "district": 4,
-        "town": 5,
-        "detail": 6,
-    }
     # 各级别对应地址信息
-    address = {2: None, 3: None, 4: None, 5: None, 6: None}
+    address = {
+        "prov": None,
+        "city": None,
+        "district": None,
+        "town": None,
+        "detail": None,
+        "name": None,
+        "phone": None,
+    }
     # 提取出各级别地址信息
     start_pos = 0
     tag_len = len(tagging)
@@ -43,12 +37,12 @@ def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
         # 如果到结尾、或 end_pos 的下一个位置不是同一类
         if (end_pos == tag_len - 1) or (tagging[end_pos + 1] != tagging[start_pos]):
             if tagging[start_pos] != "":
-                address[label_map[tagging[start_pos]]] = text[start_pos : end_pos + 1]
+                address[tagging[start_pos]] = text[start_pos : end_pos + 1]
             start_pos = end_pos + 1
     return address
 
 
-def address_check(text: str, address: dict[int, str], mysql_config) -> dict[int, str]:
+def address_check(text: str, address: dict[str, str], mysql_config) -> dict[str, str]:
     """地址校验"""
 
     def flatten_address_tree(tree, chain=[]):
@@ -66,12 +60,21 @@ def address_check(text: str, address: dict[int, str], mysql_config) -> dict[int,
             chains.append(chain)
         return chains
 
-    region_types = [2, 3, 4, 5]
+    region_type_ids = [2, 3, 4, 5]
+    region_type_names = ["prov", "city", "district", "town"]
     with pymysql.connect(**mysql_config) as mysql_conn:
         with mysql_conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            params_list = [(k, address[k]) for k in region_types]
+            params_list = [
+                (i, address[k]) for i, k in zip(region_type_ids, region_type_names)
+            ]
             # 处理 省 市 区 标签错位
-            params_list.extend([(2, address[3]), (3, address[2]), (3, address[4])])
+            params_list.extend(
+                [
+                    (2, address["city"]),
+                    (3, address["prov"]),
+                    (3, address["district"]),
+                ]
+            )
             # 过滤空值
             params_list = [(i[0], f"%{i[1]}%") for i in params_list if i[1]]
 
@@ -95,7 +98,7 @@ def address_check(text: str, address: dict[int, str], mysql_config) -> dict[int,
     #     },
     # }
     address_tree = {}
-    leaf_id = region_types[-1] - region_types[0]
+    leaf_id = region_type_ids[-1] - region_type_ids[0]
     for prefix in prefixes:
         node = address_tree
         for i in range(len(prefix)):
@@ -120,9 +123,9 @@ def address_check(text: str, address: dict[int, str], mysql_config) -> dict[int,
     scores = [fuzz.ratio(i, text) for i in address_texts]
 
     # 取分数最高的结果
-    correct_address = {k: None for k in region_types}
+    correct_address = {k: None for k in region_type_names}
     correct_address_chain = address_chains[scores.index(max(scores))]
-    correct_address.update(zip(region_types, correct_address_chain))
+    correct_address.update(zip(region_type_names, correct_address_chain))
 
     return correct_address
 

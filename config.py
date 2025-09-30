@@ -48,4 +48,10 @@ LABELS = [
     "I-detail",
     "E-detail",
     "S-detail",
+    "B-name",
+    "I-name",
+    "E-name",
+    "B-phone",
+    "I-phone",
+    "E-phone",
 ]

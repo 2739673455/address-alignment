@@ -81,7 +81,7 @@ def train(model_path: Path):
 
     # 加载数据
     preprocess(
-        src_path=config.RAW_DATA_PATH / "correct_data.jsonl",
+        src_path=config.RAW_DATA_PATH / "data.jsonl",
         tgt_path=config.PROCESSED_DATA_PATH,
         tokenizer=tokenizer,
         max_input_len=128,
@@ -102,7 +102,7 @@ def train(model_path: Path):
         num_train_epochs=20,  # 训练轮次
         per_device_train_batch_size=64,  # 训练批次
         per_device_eval_batch_size=64,  # 验证批次
-        learning_rate=3e-5,  # 学习率
+        learning_rate=5e-5,  # 学习率
         warmup_ratio=0.2,  # 预热比例
         lr_scheduler_type="cosine",  # 学习率调度器
         weight_decay=0.01,  # 权重衰减
@@ -196,7 +196,7 @@ def predict(
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
         # 将每个字符串拆成字列表：确保 tokenizer 能按字对齐 word_ids
-        batch_words = [list(t) for t in batch]
+        batch_words = [list(t.replace(" ", "")) for t in batch]
         # 分词
         tokenized = tokenizer(
             batch_words,
@@ -217,7 +217,14 @@ def predict(
             ]
             for i, label_seq in enumerate(preds)
         ]
-        res.extend(filtered_preds)
+        # 将输入中的空格标注上 'O'
+        filled_preds = []
+        for string, labels in zip(batch, filtered_preds):
+            labels_iter = iter(labels)
+            filled_preds.append(
+                [next(labels_iter) if char != " " else "O" for char in string]
+            )
+        res.extend(filled_preds)
     return res if isinstance(text, list) else res[0]
 
 
@@ -228,14 +235,14 @@ if __name__ == "__main__":
     model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
     tokenizer = BertTokenizerFast.from_pretrained(model_path)
     texts = [
-        "中国浙江省杭州市余杭区葛墩路27号楼",
-        "北京市市辖区通州区永乐店镇27号楼",
-        "北京市市辖区东风街道27号楼",
-        "新疆维吾尔自治区划阿拉尔市金杨镇27号楼",
-        "甘肃省南市文县碧口镇27号楼",
-        "陕西省渭南市华阴市罗镇27号楼",
-        "西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
-        "广州市花都区花东镇27号楼",
+        "中国浙江省杭州市余杭区葛墩路27号楼傅婷15830444519",
+        "北京市市辖区通州区永乐店镇27号楼汪明13334219987",
+        "高霞 13139243427北京市市辖区东风街道27号楼",
+        "新疆维吾尔自治区划阿拉尔市金杨镇27号楼 刘燕 14727827196",
+        "甘肃省南市文县碧口镇27号楼陈桂兰 13939269190",
+        "陕西省渭南市华阴市罗镇27号楼 赵鑫15687584092",
+        "邱金凤18582166250西藏自治区拉萨市墨竹工卡县工卡镇27号楼",
+        "广州市花都区花东镇27号楼张荣   18736672007",
     ]
     res = predict(texts, model, tokenizer, config.LABELS)
     for ts, rs in zip(texts, res):
