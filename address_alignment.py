@@ -31,7 +31,7 @@ def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
         "prov": 2,
         "city": 3,
         "district": 4,
-        "road": 5,
+        "town": 5,
         "detail": 6,
     }
     # 各级别对应地址信息

@@ -15,7 +15,7 @@ client = AsyncOpenAI(
 )
 
 # 加载 prompt 模板
-template_dir = Path(__file__).parent
+template_dir = Path(__file__).parent / "prompts"
 env = Environment(loader=FileSystemLoader(template_dir))
 template = env.get_template("prompt.jinja2")
 
@@ -60,7 +60,11 @@ def with_valid():
                 raise Exception("数据数量不匹配")
             # 内容验证
             for original, processed in zip(batch_data, result):
-                if original["text"] != processed.get("text"):
+                processed_text = processed.get("text", [])
+                processed_labels = processed.get("labels", [])
+                if (original["text"] != processed_text) or (
+                    len(processed_text) != len(processed_labels)
+                ):
                     raise Exception("数据内容不匹配")
             return result
 
@@ -114,12 +118,12 @@ class OrderedWriter:
                 self.output_file.write(json.dumps(i, ensure_ascii=False) + "\n")
             self.output_file.flush()
             del self.completed_batches[self.cur_line_num]
-            # 更新待写入数据的行号
-            self.cur_line_num += len(cur_batches)
             console.print(
                 f"{self.cur_line_num}:{self.cur_line_num + len(cur_batches)} 已写入",
                 style="green",
             )
+            # 更新待写入数据的行号
+            self.cur_line_num += len(cur_batches)
 
 
 async def process_single_batch(i, batch_datas, writer: OrderedWriter):
