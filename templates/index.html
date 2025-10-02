@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>地址对齐</title>
+    <title>Chat</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
     <style>
@@ -30,7 +30,7 @@
             overflow-y: auto;
         }
 
-        #dialog-area {
+        #chat-area {
             flex: 1 1 70%;
             width: 100%;
             max-width: 900px;
@@ -213,17 +213,17 @@
 </head>
 
 <body>
-    <div id="dialog-area">
+    <div id="chat-area">
         <div class="bot-message message-bubble"></div>
     </div>
     <div class="input-box">
-        <textarea id="user-input" placeholder="请输入地址"></textarea>
+        <textarea id="user-input"></textarea>
         <button id="send-btn" onclick="sendMessage()">发送</button>
     </div>
 
     <script>
-        const dialogArea = document.getElementById('dialog-area');
-        const input = document.getElementById('user-input');
+        const chatArea = document.getElementById('chat-area');
+        const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const loadingBubble = createLoadingBubble();
         marked.setOptions({
@@ -236,17 +236,17 @@
         // 发送消息
         async function sendMessage() {
             // 获取用户输入
-            const message = input.value.trim();
+            const message = userInput.value.trim();
             if (!message) return;
             // 禁用发送按钮
             sendBtn.disabled = true;
             // 发送消息
             addMessage(message, true);
             // 清空输入框并恢复高度
-            input.value = '';
-            input.style.height = 'auto';
+            userInput.value = '';
+            userInput.style.height = 'auto';
             // 添加加载状态
-            dialogArea.appendChild(loadingBubble);
+            chatArea.appendChild(loadingBubble);
             window.scrollTo(0, document.body.scrollHeight);
             // 获取回复
             try {
@@ -257,13 +257,15 @@
                 });
                 const data = await response.json();
                 const address = [
-                    `- 省份：${data.province ?? '无'}`,
+                    `- 省份：${data.prov ?? '无'}`,
                     `- 城市：${data.city ?? '无'}`,
                     `- 区县：${data.district ?? '无'}`,
                     `- 街道：${data.town ?? '无'}`,
                     `- 详细地址：${data.detail ?? '无'}`
-                ].join('\n');
-                responseContent = address;
+                        `- 姓名：${data.name ?? '无'}`
+                        `- 电话：${data.phone ?? '无'}`
+                ];
+                responseContent = address.join('\n');
             } catch (error) {
                 console.error('请求失败：', error);
                 responseContent = '系统暂时无法响应，请稍后再试😥';
@@ -279,13 +281,13 @@
         }
 
         // 自动调整输入框高度
-        document.getElementById('user-input').addEventListener('input', () => {
-            input.style.height = 'auto';
-            input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
         });
 
         // 监听回车键
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
+        userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
@@ -295,7 +297,7 @@
         // 创建加载状态的气泡
         function createLoadingBubble() {
             const bubble = document.createElement('div');
-            bubble.classList.add('message-bubble', 'bot-message', 'new-message');
+            bubble.className = 'message-bubble bot-message new-message';
             const loadingContainer = document.createElement('div');
             loadingContainer.className = 'loading-container';
             const loader = document.createElement('div');
@@ -331,10 +333,10 @@
                 this.removeEventListener('animationend', handler);
             });
             // 对话框添加气泡
-            dialogArea.appendChild(bubble);
+            chatArea.appendChild(bubble);
+            // 滚动到底部
             window.scrollTo(0, document.body.scrollHeight);
         }
-
     </script>
 </body>
 
