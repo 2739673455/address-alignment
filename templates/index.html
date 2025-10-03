@@ -9,9 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
     <style>
         :root {
-            --blue: #1e66f5;
-            --background-color: #f8f7f6;
-            --shadow-color: #00000056;
+            --primary_color: #7a81ad;
         }
 
         * {
@@ -23,7 +21,7 @@
 
         body {
             min-height: 100vh;
-            background-color: var(--background-color);
+            background-color: #1f222f;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -43,58 +41,31 @@
             display: inline-flex;
             margin-bottom: 16px;
             padding: 12px;
-            border-radius: 16px;
+            border: 4px;
             font-size: 16px;
             line-height: 1.5;
             word-break: break-word;
         }
 
-        .new-message {
-            animation: messageAppear 0.3s ease;
-        }
-
-        @keyframes messageAppear {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: none;
-            }
-        }
-
         .user-message {
-            background-color: var(--blue);
             align-self: flex-end;
-            color: white;
-            box-shadow: 0 2px 4px var(--shadow-color);
+            color: var(--primary_color);
         }
 
         .bot-message {
             align-self: flex-start;
-            color: black;
+            color: rgb(190, 190, 190);
         }
 
-        .input-box {
+        #input-area {
             width: 100%;
             max-width: 900px;
             padding: 16px;
-            border-radius: 16px;
+            border: 2px solid var(--primary_color);
+            border-radius: 6px;
             position: sticky;
             bottom: 16px;
-            background-color: #ffffffab;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-
-            &:hover {
-                box-shadow: 0 0 4px 4px var(--blue);
-            }
-
-            &:focus-within {
-                border: 2px solid var(--blue);
-            }
+            background-color: #2e2e2e69;
         }
 
         #user-input {
@@ -106,29 +77,38 @@
             resize: none;
             border: none;
             outline: none;
+            color: var(--primary_color);
             background-color: #ffffff00;
+        }
+
+        #user-input::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #user-input::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #user-input::-webkit-scrollbar-thumb {
+            background-color: var(--primary_color);
+            border-radius: 4px;
+        }
+
+        #user-input::-webkit-scrollbar-button {
+            display: none;
         }
 
         #send-btn {
             padding: 8px 16px;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             margin-left: auto;
             display: block;
-            background-color: var(--blue);
-
-            &:hover {
-                transform: scale(1.1);
-                box-shadow: 0 0 4px 4px var(--blue);
-            }
-
-            &:active {
-                transform: scale(0);
-            }
+            background-color: var(--primary_color);
 
             &:disabled {
                 background-color: #cccccc;
@@ -141,25 +121,19 @@
         .loading-container {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+            animation: blink 1s ease-in-out infinite;
         }
 
-        .loader {
-            width: 30px;
-            height: 30px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+        @keyframes blink {
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
+            0%,
+            100% {
+                opacity: 1;
             }
 
-            100% {
-                transform: rotate(360deg);
+            50% {
+                opacity: 0.3;
             }
         }
 
@@ -176,7 +150,7 @@
         .markdown-content h2,
         .markdown-content h3 {
             margin: 1em 0 0.5em;
-            color: var(--blue);
+            color: var(--primary_color);
         }
 
         .markdown-content p {
@@ -213,14 +187,11 @@
 </head>
 
 <body>
-    <div id="chat-area">
-        <div class="bot-message message-bubble"></div>
-    </div>
-    <div class="input-box">
+    <div id="chat-area"></div>
+    <div id="input-area">
         <textarea id="user-input"></textarea>
         <button id="send-btn" onclick="sendMessage()">发送</button>
     </div>
-
     <script>
         const chatArea = document.getElementById('chat-area');
         const userInput = document.getElementById('user-input');
@@ -232,88 +203,38 @@
                 return hljs.highlightAuto(code).value;
             }
         });
-
-        // 发送消息
-        async function sendMessage() {
-            // 获取用户输入
-            const message = userInput.value.trim();
-            if (!message) return;
-            // 禁用发送按钮
-            sendBtn.disabled = true;
-            // 发送消息
-            addMessage(message, true);
-            // 清空输入框并恢复高度
-            userInput.value = '';
-            userInput.style.height = 'auto';
-            // 添加加载状态
-            chatArea.appendChild(loadingBubble);
-            window.scrollTo(0, document.body.scrollHeight);
-            // 获取回复
-            try {
-                const response = await fetch('/address_alignment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
-                });
-                const data = await response.json();
-                const address = [
-                    `- 省份：${data.prov ?? '无'}`,
-                    `- 城市：${data.city ?? '无'}`,
-                    `- 区县：${data.district ?? '无'}`,
-                    `- 街道：${data.town ?? '无'}`,
-                    `- 详细地址：${data.detail ?? '无'}`
-                        `- 姓名：${data.name ?? '无'}`
-                        `- 电话：${data.phone ?? '无'}`
-                ];
-                responseContent = address.join('\n');
-            } catch (error) {
-                console.error('请求失败：', error);
-                responseContent = '系统暂时无法响应，请稍后再试😥';
-            }
-            // 移除加载状态
-            loadingBubble.remove();
-            // 发送回复消息
-            if (responseContent != null) {
-                addMessage(responseContent, false);
-            }
-            // 启用发送按钮
-            sendBtn.disabled = false;
-        }
-
         // 自动调整输入框高度
         userInput.addEventListener('input', () => {
             userInput.style.height = 'auto';
             userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
         });
-
         // 监听回车键
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (e.shiftKey) {
+                    return;
+                }
                 e.preventDefault();
-                sendMessage();
+                if (!sendBtn.disabled) {
+                    sendMessage();
+                }
             }
         });
-
         // 创建加载状态的气泡
         function createLoadingBubble() {
             const bubble = document.createElement('div');
-            bubble.className = 'message-bubble bot-message new-message';
+            bubble.className = 'message-bubble bot-message';
             const loadingContainer = document.createElement('div');
             loadingContainer.className = 'loading-container';
-            const loader = document.createElement('div');
-            loader.className = 'loader';
-            loadingContainer.appendChild(loader);
-            loadingContainer.appendChild(document.createTextNode('正在思索中...'));
+            loadingContainer.textContent = '正在思索中...';
             bubble.appendChild(loadingContainer);
             return bubble;
         }
-
         // 添加消息气泡
         function addMessage(content, isUser) {
             const bubble = document.createElement('div');
             // 设置气泡样式
-            bubble.classList.add('message-bubble', isUser ? 'user-message' : 'bot-message', 'new-message');
-            // 如果传入的是字符串则创建文本
+            bubble.classList.add('message-bubble', isUser ? 'user-message' : 'bot-message');
             if (!isUser) {
                 // 机器人回复转换为markdown格式
                 const markdownContainer = document.createElement('div');
@@ -329,13 +250,61 @@
             }
             // 添加气泡动态效果
             bubble.addEventListener('animationend', function handler() {
-                this.classList.remove('new-message');
                 this.removeEventListener('animationend', handler);
             });
             // 对话框添加气泡
             chatArea.appendChild(bubble);
             // 滚动到底部
             window.scrollTo(0, document.body.scrollHeight);
+        }
+        // 发送消息
+        async function sendMessage() {
+            // 获取用户输入
+            const message = userInput.value.trim();
+            if (!message) return;
+            // 禁用发送按钮
+            sendBtn.disabled = true;
+            // 添加消息
+            addMessage(message, true);
+            // 清空输入框并恢复高度
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            // 添加加载状态
+            chatArea.appendChild(loadingBubble);
+            // 滚动到底部
+            window.scrollTo(0, document.body.scrollHeight);
+            // 获取回复
+            let responseContent;
+            try {
+                const response = await fetch('/address_alignment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                console.log(data);
+                const address = [
+                    `- 省份：${data.prov ?? '无'}`,
+                    `- 城市：${data.city ?? '无'}`,
+                    `- 区县：${data.district ?? '无'}`,
+                    `- 街道：${data.town ?? '无'}`,
+                    `- 详细地址：${data.detail ?? '无'}`,
+                    `- 姓名：${data.name ?? '无'}`,
+                    `- 电话：${data.phone ?? '无'}`
+                ];
+                responseContent = address.join('\n');
+            } catch (error) {
+                console.error('请求失败：', error);
+                responseContent = '系统暂时无法响应，请稍后再试😥';
+            }
+            // 移除加载状态
+            loadingBubble.remove();
+            // 添加响应消息
+            if (responseContent != null) {
+                addMessage(responseContent, false);
+            }
+            // 启用发送按钮
+            sendBtn.disabled = false;
         }
     </script>
 </body>

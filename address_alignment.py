@@ -1,3 +1,4 @@
+import re
 import config
 import pymysql
 from rapidfuzz import fuzz
@@ -44,6 +45,23 @@ def address_extract(text: str, tagging: list[str]) -> dict[int, str]:
 
 def address_check(text: str, address: dict[str, str], mysql_config) -> dict[str, str]:
     """地址校验"""
+
+    # 检查电话号码
+    if address["phone"]:
+        # 检查是否为手机号码
+        if not (
+            len(address["phone"]) == 11
+            and address["phone"].isdigit()
+            and address["phone"][0] == "1"
+        ):
+            # 检查是否位座机号码
+            pattern = r"^(?:\+?\d{1,4}[-.\s]?)?(\(?\d{2,4}\)?[-.\s]?)?\d{6,11}$"
+            if not re.match(pattern, address["phone"]):
+                address["phone"] = None
+
+    # 如果地址部分为空则结束
+    if all(address[k] is None for k in ["prov", "city", "district", "town"]):
+        return address
 
     def flatten_address_tree(tree, chain=[]):
         """将树展平"""
