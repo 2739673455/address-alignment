@@ -9,7 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
     <style>
         :root {
-            --primary_color: #7a81ad;
+            --primary_color: #4a60a3;
+            --font_color: #e7e7e7;
         }
 
         * {
@@ -21,7 +22,7 @@
 
         body {
             min-height: 100vh;
-            background-color: #1f222f;
+            background-color: #1f1f1f;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -41,7 +42,6 @@
             display: inline-flex;
             margin-bottom: 16px;
             padding: 12px;
-            border: 4px;
             font-size: 16px;
             line-height: 1.5;
             word-break: break-word;
@@ -49,12 +49,15 @@
 
         .user-message {
             align-self: flex-end;
-            color: var(--primary_color);
+            color: var(--font_color);
+            border: var(--primary_color) 2px solid;
+            border-radius: 4px;
+            background-color: #2e2e2e69;
         }
 
         .bot-message {
             align-self: flex-start;
-            color: rgb(190, 190, 190);
+            color: var(--font_color);
         }
 
         #input-area {
@@ -77,7 +80,7 @@
             resize: none;
             border: none;
             outline: none;
-            color: var(--primary_color);
+            color: var(--font_color);
             background-color: #ffffff00;
         }
 
@@ -248,10 +251,6 @@
             } else {
                 bubble.textContent = content;
             }
-            // 添加气泡动态效果
-            bubble.addEventListener('animationend', function handler() {
-                this.removeEventListener('animationend', handler);
-            });
             // 对话框添加气泡
             chatArea.appendChild(bubble);
             // 滚动到底部
@@ -264,7 +263,7 @@
             if (!message) return;
             // 禁用发送按钮
             sendBtn.disabled = true;
-            // 添加消息
+            // 添加用户消息
             addMessage(message, true);
             // 清空输入框并恢复高度
             userInput.value = '';
