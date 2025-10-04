@@ -3,8 +3,16 @@
 │   ├── raw/
 │   │   └── data.jsonl      # 微调数据
 │   └── region.sql          # 地址表
-├── finetuned/              # 模型权重存储目录
+├── pretrained/             # 预训练模型
+└── templates/              # 网页模板
+
+./
+├── data/
+│   ├── raw/
+│   │   └── data.jsonl      # 微调数据
+│   └── region.sql          # 地址表
 ├── templates/              # 网页模板
+├── finetuned/              # 微调模型目录
 ├── config.py               # 配置文件
 ├── sql_import.py           # 建库并导入数据
 ├── token_classification.py # 序列标注模型训练

@@ -26,7 +26,7 @@
             数据量：共计约20万条样本，按8：1：1划分训练集、验证集、测试集
             标签：包括姓名、电话、省、市、区、街道、详细地址、非实体8类22个标签
         2.模型训练
-            1.预训练模型：bert-base-chinese
+            1.预训练模型：roberta-small-wwm-chinese-cluecorpussmall
             2.模型架构：BERT+Dropout+Linear(BertForTokenClassification)
             3.超参数
                 最大序列长度：128

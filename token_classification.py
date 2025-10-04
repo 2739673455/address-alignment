@@ -102,7 +102,7 @@ def train(model_path: Path):
         num_train_epochs=20,  # 训练轮次
         per_device_train_batch_size=64,  # 训练批次
         per_device_eval_batch_size=64,  # 验证批次
-        learning_rate=5e-5,  # 学习率
+        learning_rate=2e-5,  # 学习率
         warmup_ratio=0.2,  # 预热比例
         lr_scheduler_type="cosine",  # 学习率调度器
         weight_decay=0.01,  # 权重衰减
@@ -229,7 +229,7 @@ def predict(
 
 
 if __name__ == "__main__":
-    # train(config.ROBERTA_SMALL)
+    train(config.ROBERTA_SMALL)
 
     model_path = config.FINETUNED_PATH / "best"
     model = BertForTokenClassification.from_pretrained(model_path).to(config.DEVICE)
